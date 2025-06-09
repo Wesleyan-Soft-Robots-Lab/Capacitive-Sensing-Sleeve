@@ -1,10 +1,16 @@
 /*
 Name: Miles Modeste **built on 'singlecapacitor.ino' by Katelyn Rosethorn
 Date Created: 6/2/2025
-Last Updated: 6/5/2025
+Last Updated: 6/9/2025
 
 Description:
   Reads multiple capacitors connected to FDC1004 chips on TCA9548A multiplexor via I2C.
+
+Hardware Setup:
+  + One sensor patch connected to channel ONEA via multiplexor on port 7
+  + One sensor patch connected to channel TWOA via multiplexor on port 7
+
+  ** Tip you can change hardware setup in the init function
 */
 
 #include <Wire.h>
@@ -12,17 +18,15 @@ Description:
 #include <List.hpp>
 
 #define TCAADDR1 0x70  // 1st link multiplexer
-#define TCAADDR2 0x71  // 2nd link multiplexer (currently n/a)
 
-#define UPPER_BOUND 0x7FFF
+#define UPPER_BOUND 0x7FFF // max val for uint16_t
 #define LOWER_BOUND (-1 * UPPER_BOUND)
 #define ONEA 0  // channel
 #define ONEB 1
 #define TWOA 2
 #define TWOB 3
 
-#define MAX_WINDOW 10  //set 1 to disable; max: 255
-#define SENSOR_COUNT 1
+#define MAX_WINDOW 5  //set 1 to disable; max: 255
 FDC1004 FDC;
 
 /* Defines Sensor obj: 
@@ -33,14 +37,11 @@ public:
   uint8_t bus;      //multiplexor port (0-7) fdc chip is connected to
   uint8_t channel;  //chip channel
 
-  uint8_t capdac = 0;  // Capacitance Digital-to-Analog Converter (subtracts baseline 0-15pF). Used for calibrating max capVal
-  List<int16_t> window;
-  uint8_t window_len = 0;
-  int32_t window_sum = 0;
+  uint16_t value[2];
+  int16_t msb, lsb;  //most and least significant byte. displaying lsb only helps with viewing full range of msb
 
-  uint16_t capVal;  //avg raw units
-
-  bool isCalibrated = false;
+  uint8_t capdac = 9;  // Capacitance Digital-to-Analog Converter (subtracts baseline 0-15pF). Used for calibrating max capVal
+  int32_t capacitance;
 
   Sensor(uint8_t addr, uint8_t ch)
     : bus(addr), channel(ch) {}
@@ -59,112 +60,53 @@ public:
     FDC.configureMeasurementSingle(channel, channel, capdac);
     FDC.triggerSingleMeasurement(channel, FDC1004_100HZ);
 
-    //wait for completion
     delay(15);
-    uint16_t value[2];
 
     if (!FDC.readMeasurement(channel, value)) {
-      uint16_t msb = value[0];
+      msb = value[0];
+      lsb = value[1]; //LEAST significant byte
 
-      if (window_len < MAX_WINDOW) {
-        window_sum += msb;
-        window.add(msb);
-        window_len++;
+      //hard press to calibrate capdac
+      if ((msb >= UPPER_BOUND)) {
+        Serial.println("msb too high:"+ (String) msb+ "| Increasing capdac...");
+        capdac = (capdac < 15)? capdac+1: 15;
+        return;
+      } else if (msb <= LOWER_BOUND) {
+        Serial.println("msb too low:"+ (String) msb+ "| Decreasing capdac...");
+        capdac = (capdac > 0)? capdac-1: 0;
       }
-      else {
-        window_sum -= window[0];
-        window.removeFirst();
-        window_sum += msb;
-        window.add(msb);
-      }
-      capVal = window_sum/window_len;
 
-      /* int32_t capacitance = ((int32_t)457) * ((int32_t)msb);  //in attofarads
-      capacitance /= 1000;                                    //in femtofarads
+      capacitance = ((int32_t)457) * ((int32_t)msb);  //in attofarads
+      capacitance /= 1000;                              //in femtofarads
       capacitance += ((int32_t)3028) * ((int32_t)capdac);
-      */
-    }
-  }
-  // Sets appropriate capdac
-  long period = 200;
-
-  void Calibrate() {
-    // set lowAvg
-    uint16_t lo,hi;
-    isCalibrated = false;
-    capdac = 0;
-    //reset window
-    window.clear();
-    window_len = 0;
-    window_sum = 0;
-    unsigned long start = millis();
-    while(true)
-    {
-      UpdateSensor();
-      unsigned long timeDelta = start - millis();
-      if (timeDelta >= period){
-        lo = capVal;
-        capdac ++;
-        break;
-      }
-    }
-    //set hiAvg
-    while (!isCalibrated) {
-      //reset window
-      window.clear();
-      window_len = 0;
-      window_sum = 0;
-      unsigned long start = millis();
-      while (true)
-      {
-        UpdateSensor();
-        unsigned long timeDelta = start - millis();
-        if (timeDelta >= period)
-        {
-          hi = capVal;
-          if (abs(lo) > abs(hi)) 
-          {
-            lo = hi;
-            capdac++;
-          }
-          else if (abs(lo) <= abs(hi))
-          {
-            isCalibrated = true;
-            return;
-          }
-        }
-      }
     }
   }
 };
 
+#define SENSOR_COUNT 2
 Sensor sensors[SENSOR_COUNT];
 
 void initSensors() {
-  //**Note** adjust SENSORCOUNT accordingly
+  //**Tip: adjust SENSORCOUNT accordingly
   /* sensors[0] = Sensor(0, TWOB);
   sensors[1] = Sensor(7, ONEB);
   sensors[2] = Sensor(0, ONEB);
   sensors[3] = Sensor(0, TWOA); */
   sensors[0] = Sensor(7, ONEA);
-  for (int i=0; i<SENSOR_COUNT; i++){
-    sensors[i].Calibrate();
-  }
+  sensors[1] = Sensor(7, TWOB);
   return;
 }
 
 void Debug() {
   //Print statements
-  String msg = "";
   for (int i = 0; i < SENSOR_COUNT; i++) {
     if (i != 0) {
-      msg = ", ";
+      Serial.print(", ");
     }
-    int reading = sensors[i].capVal;
-    int offset = sensors[i].capdac;
-    //msg += "sensor_" + (String)i + ":" + (String)reading;
-    Serial.print("sensor_" + (String)i + ":");
-    Serial.print(reading);
+    Serial.print("sensor" + (String)i + "_val:");
+    Serial.print(sensors[i].msb);
+    Serial.print(", sensor" + (String)i + "_cap:");
+    Serial.print(sensors[i].capacitance);
   }
   Serial.println();
 }
@@ -182,7 +124,6 @@ void setup() {
 }
 
 void loop() {
-  //1st Multiplexer
   for (int i = 0; i < SENSOR_COUNT; i++) {
     sensors[i].UpdateSensor();
   }
