@@ -7,6 +7,7 @@ Description:
   Reads multiple capacitors connected to FDC1004 chips on TCA9548A multiplexor via I2C.
 
 Hardware Setup:
+  + 5v
   + One sensor patch connected to channel ONEA via multiplexor on port 7
   + One sensor patch connected to channel TWOA via multiplexor on port 7
 
@@ -26,7 +27,6 @@ Hardware Setup:
 #define TWOA 2
 #define TWOB 3
 
-#define MAX_WINDOW 5  //set 1 to disable; max: 255
 FDC1004 FDC;
 
 /* Defines Sensor obj: 
@@ -41,7 +41,7 @@ public:
   int16_t msb, lsb;  //most and least significant byte. displaying lsb only helps with viewing full range of msb
 
   uint8_t capdac = 9;  // Capacitance Digital-to-Analog Converter (subtracts baseline 0-15pF). Used for calibrating max capVal
-  int32_t capacitance;
+  int32_t capacitance; // In femtoFarads 
 
   Sensor(uint8_t addr, uint8_t ch)
     : bus(addr), channel(ch) {}
@@ -93,7 +93,7 @@ void initSensors() {
   sensors[2] = Sensor(0, ONEB);
   sensors[3] = Sensor(0, TWOA); */
   sensors[0] = Sensor(7, ONEA);
-  sensors[1] = Sensor(7, TWOB);
+  sensors[1] = Sensor(7, ONEB);
   return;
 }
 

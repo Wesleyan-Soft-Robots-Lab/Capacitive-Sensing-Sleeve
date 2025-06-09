@@ -25,7 +25,6 @@ Hardware Setup:
 #define TWOA 2
 #define TWOB 3
 
-#define MAX_WINDOW 5  //set 1 to disable; max: 255
 FDC1004 FDC;
 
 /* Defines Sensor obj: 
