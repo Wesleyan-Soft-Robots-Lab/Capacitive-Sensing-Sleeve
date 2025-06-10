@@ -1,7 +1,7 @@
 /*
-Name: Miles Modeste **built on 'singlecapacitor.ino' by Katelyn Rosethorn
+Name: Miles Modeste **edited from 'singlecapacitor.ino' by Katelyn Rosethorn
 Date Created: 6/2/2025
-Last Updated: 6/9/2025
+Last Updated: 6/10/2025
 
 Description:
   Quickly reads full range of multiple capacitors connected to FDC1004 chips on TCA9548A multiplexor via I2C.
@@ -36,6 +36,7 @@ includes addr, channel, window, window_sum, capacitance, and ;
 Sensor() sets defaults (i.e. address & channel = 0)*/
 class Sensor {
 public:
+  //might be worth it to make uint8_t id for sending to python
   uint8_t mux = TCAADDR1; //multiplexor port (0-1) fdc chip is connected to
   uint8_t bus;            //multiplexor port (0-7) fdc chip is connected to
   uint8_t channel;        //chip channel
@@ -75,11 +76,11 @@ public:
 
       //hard press to calibrate capdac
       if ((msb >= UPPER_BOUND)) {
-        Serial.println("msb too high:"+ (String) msb+ "| Increasing capdac...");
+        //Serial.println("msb too high:"+ (String) msb+ "| Increasing capdac...");
         capdac = (capdac < 15)? capdac+1: 15;
         return;
       } else if (msb <= LOWER_BOUND) {
-        Serial.println("msb too low:"+ (String) msb+ "| Decreasing capdac...");
+        //Serial.println("msb too low:"+ (String) msb+ "| Decreasing capdac...");
         capdac = (capdac > 0)? capdac-1: 0;
       }
 
@@ -106,9 +107,9 @@ void initSensors() {
 void Debug() {
   for (int i = 0; i < SENSOR_COUNT; i++) {
     if (i != 0) {
-      Serial.print(", ");
+      Serial.print(";");
     }
-    Serial.print("sensor_" + (String)i + ":");
+    Serial.print("sensor_" + (String)i + ",");
     Serial.print(sensors[i].capacitance);
   }
   Serial.println();
@@ -119,11 +120,10 @@ MAIN
 */
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Wire.begin();
-  while (!Serial);
   initSensors();
-  delay(500);
+  while (!Serial);
 }
 
 void loop() {
