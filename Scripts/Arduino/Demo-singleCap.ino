@@ -32,6 +32,7 @@ includes addr, channel, window, window_sum, capacitance, and ;
 Sensor() sets defaults (i.e. address & channel = 0)*/
 class Sensor {
 public:
+  uint8_t mux = TCAADDR1; //multiplexor port (0-1) fdc chip is connected to
   uint8_t bus;      //multiplexor port (0-7) fdc chip is connected to
   uint8_t channel;  //chip channel
 
@@ -41,20 +42,23 @@ public:
   uint8_t capdac = 9;  // Capacitance Digital-to-Analog Converter (subtracts baseline 0-15pF). Used for calibrating max capVal
   int32_t capacitance;
 
-  Sensor(uint8_t addr, uint8_t ch)
-    : bus(addr), channel(ch) {}
-  Sensor()
-    : bus(0), channel(0) {}
+  Sensor(uint8_t addr=0, uint8_t ch=0, uint8_t muxPort=TCAADDR1)
+    : bus(addr), channel(ch), mux(muxPort) {}
 
   // Switches mux port to read from
-  void SetBus(uint8_t bus) {
-    Wire.beginTransmission(TCAADDR1);
+  void SetBus(uint8_t mux, uint8_t bus) {
+    if (bus > 7) {
+      Serial.println("Error: bus must be between 0 and 7");
+      return;
+    }
+
+    Wire.beginTransmission(mux);
     Wire.write(1 << bus);
     Wire.endTransmission();
   }
 
   void UpdateSensor() {
-    SetBus(bus);
+    SetBus(mux, bus);
     FDC.configureMeasurementSingle(channel, channel, capdac);
     FDC.triggerSingleMeasurement(channel, FDC1004_100HZ);
 
@@ -89,11 +93,13 @@ public:
   }
 };
 
+/*************************
+      Define Sensors
+**************************/
 #define SENSOR_COUNT 1
 Sensor sensors[SENSOR_COUNT];
 
 void initSensors() {
-  //**Tip: adjust SENSORCOUNT accordingly
   /* sensors[0] = Sensor(0, TWOB);
   sensors[1] = Sensor(7, ONEB);
   sensors[2] = Sensor(0, ONEB);
@@ -125,7 +131,7 @@ void setup() {
   Wire.begin();
   while (!Serial);
   initSensors();
-  delay(1000);
+  delay(500);
 }
 
 void loop() {
