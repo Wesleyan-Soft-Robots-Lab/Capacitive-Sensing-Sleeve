@@ -7,7 +7,7 @@ class Sensor:
         self.id = id
         self.value = 0 # in femtoFarads
         self.lowestValue = 20000 
-        self.highestValue = 40000
+        self.highestValue = 50000
         #self.timestamp = time.time()
 
     def __str__(self):
@@ -19,8 +19,6 @@ class Sensor:
             self.lowestValue = value
         if value > self.highestValue:
             self.highestValue = value
-
-Sleeve = dict[int, Sensor]()
 
 """
 Methods 
@@ -38,21 +36,28 @@ def ReadPort():
             Sleeve[id] = Sensor(id)
 
         Sleeve[id].Update(int(val))
-""" 
-Script Start
-"""
-timestamp = time.time()
-printDelay = 5  # seconds
-while True:
-    try:
-        arduino = serial.Serial(port='COM10',   baudrate=115200, timeout=.1)
-        break
-    except serial.SerialException as e:
-        if time.time() - timestamp > printDelay:
-            timestamp = time.time()
-            print(f"Error opening serial port. Check if the Arduino is connected...")
 
-while True:
-    ReadPort()
-    for patch in Sleeve:
-        print(Sleeve[patch])
+def main():
+    global arduino, Sleeve
+    
+    Sleeve = dict[int, Sensor]()
+
+    timestamp = time.time()
+    printDelay = 5  # seconds
+    while True:
+        try:
+            arduino = serial.Serial(port='COM10',   baudrate=115200, timeout=.1)
+            break
+        except serial.SerialException as e:
+            if time.time() - timestamp > printDelay:
+                timestamp = time.time()
+                print(f"Error opening serial port. Check if the Arduino is connected...")
+    
+    while True:
+        ReadPort()
+        for patch in Sleeve:
+            print(Sleeve[patch])
+
+
+if __name__ == "__main__":
+    main()
