@@ -71,9 +71,9 @@ It also consolidates relevant work done in:
    - open and enter 192.168.1.232(IP address found on the arm block sticker) onto the search bar
    - click connect, and explore the options of arm controll 
    **NB MAC USERS :**The studio app may flag as unsafe and fail to open the first time. Go to system settings, scroll down and click privacy and security. Then scroll to the bottom and you will see the app listed as an unsafe app that tried to open, click allow anyway
-   
-#### <u> Connecting to xArm (Using the ufactory studio app)</u>:
-### Configuring machine:
+
+#### <u> Connecting to xArm (Python arm.py script)</u>:
+###
 
 
 
