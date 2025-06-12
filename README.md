@@ -73,6 +73,8 @@ It also consolidates relevant work done in:
    **NB MAC USERS :**The studio app may flag as unsafe and fail to open the first time. Go to system settings, scroll down and click privacy and security. Then scroll to the bottom and you will see the app listed as an unsafe app that tried to open, click allow anyway
 
 #### <u> Connecting to xArm (Python arm.py script)</u>:
+#### Configuring file libraries and installing modules:
+
 ###
 
 
