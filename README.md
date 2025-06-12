@@ -48,7 +48,7 @@ It also consolidates relevant work done in:
 ## xArm5
 ### Connecting to xArm:
 1. Double check all cables are properly connected and "Emergency Stop" button is up. All leds should be lit (Flickering LAN leds are OK, it's working) There is a sticker with an IP address labeled **192.168.232** !Remember where to find this!
-2. Configure IP Address: (someone who hasn't connected to the arm b4, please confirm if step is necessary)
+2. Configure IP Address: (someone who hasn't connected to the arm b4, please confirm if step is necessary. I think you might only need to wait for the 3 beeps for the server to get ready).
     #### Windows 11:
     1. Open your **Control Panel**
     2. Navigate to: <u>Network and Internet</u> > <u>Network and Sharing Center</u>

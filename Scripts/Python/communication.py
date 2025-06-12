@@ -1,3 +1,14 @@
+""" 
+Name: Miles Modeste
+Date Created: 6/11/2025
+Last Updated: 6/12/2025
+
+Description:
+  This script is used to communicate between the Arduino and Python and test the speed of different encoding methods. 
+
+TODO:
+    - Add speed check
+"""
 import os
 import serial
 import time
@@ -23,10 +34,13 @@ class Sensor:
 """
 Methods 
 """
-def ReadPort():
+def ReadPort() -> bool:
+
     line = arduino.readline().decode('utf-8').strip()
+
     if not line:
-        return
+        return False
+    
     for chunk in line.split(';'):
         if len(chunk) < 2:
             continue
@@ -37,9 +51,11 @@ def ReadPort():
 
         Sleeve[id].Update(int(val))
 
+    return True
+
 def main():
     global arduino, Sleeve
-    
+
     Sleeve = dict[int, Sensor]()
 
     timestamp = time.time()
