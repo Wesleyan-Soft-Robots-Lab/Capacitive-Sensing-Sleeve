@@ -45,8 +45,9 @@ It also consolidates relevant work done in:
 ## TCA9548A I2C Multiplexor
     + image
     + link to more info
-## xArm5
-### Connecting to xArm:
+## xArm6
+#### <u> Connecting to xArm (Using the ufactory studio app)</u>:
+### Configuring machine:
 1. Double check all cables are properly connected and "Emergency Stop" button is up. All leds should be lit (Flickering LAN leds are OK, it's working) There is a sticker with an IP address labeled **192.168.232** !Remember where to find this!
 2. Configure IP Address: (someone who hasn't connected to the arm b4, please confirm if step is necessary. I think you might only need to wait for the 3 beeps for the server to get ready).
     #### Windows 11:
@@ -58,6 +59,21 @@ It also consolidates relevant work done in:
     6. Set IP: **192.168.1.x**; and Subnet Mask: **255.255.255.0** (x can be anything from 0-255. **! Do NOT choose same ip as sticker !**)
     7. Hit **OK** and **Close** to confirm settings
     
-    #### Mac
-    1. ...
-3. ... 
+    #### Mac:
+    ## Getting a feel through Ufactory studion GUI:
+    1. Connect the ethernet cable from the arm set up to your computer
+    2. navigate to system settings --> Network --> Ethernet.
+    3. Select **<u>USB 10/100/1000LAN</u>** --> click **details** --> **TCP/IP**, and set **<u>configure IPv4<\u>** to **manually**
+    4. Set IP: **192.168.1.x**; and Subnet Mask: **255.255.255.0** (x can be anything from 0-255. **! Do NOT choose same ip as sticker !**), confirm settings.
+
+### Download and set up UFactory studio app:
+   - [download ufactory studio app on your machine](https://www.ufactory.us/ufactory-studio)
+   - open and enter 192.168.1.232(IP address found on the arm block sticker) onto the search bar
+   - click connect, and explore the options of arm controll 
+   **NB MAC USERS :**The studio app may flag as unsafe and fail to open the first time. Go to system settings, scroll down and click privacy and security. Then scroll to the bottom and you will see the app listed as an unsafe app that tried to open, click allow anyway
+   
+#### <u> Connecting to xArm (Using the ufactory studio app)</u>:
+### Configuring machine:
+
+
+
