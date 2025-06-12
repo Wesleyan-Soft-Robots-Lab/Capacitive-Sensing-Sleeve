@@ -92,7 +92,7 @@ Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCe
     ## Getting a feel through Ufactory studion GUI:
     1. Connect the ethernet cable from the arm set up to your computer
     2. navigate to system settings --> Network --> Ethernet.
-    3. Select **<u>USB 10/100/1000LAN</u>** --> click **details** --> **TCP/IP**, and set **<u>configure IPv4<\u>** to **manually**
+    3. Select **<u>USB 10/100/1000LAN</u>** --> click **details** --> **TCP/IP**, and set **<u>configure IPv4</u>** to **manually**
     4. Set IP: **192.168.1.x**; and Subnet Mask: **255.255.255.0** (x can be anything from 0-255. **! Do NOT choose same ip as sticker !**), confirm settings.
 
 ### Download and set up UFactory studio app:
