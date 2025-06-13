@@ -19,7 +19,7 @@ def initArm():
     arm.move_gohome(speed=speed, wait=True)
 
     arm.set_servo_angle(angle=[0,0,-45,0,0,0], speed=speed, wait=True)
-    
+
     arm.set_mode(5)
     arm.set_state(0)
 
@@ -33,15 +33,23 @@ def followHand():
     # if sensor is above maximum range, move the arm away from hand to "ideal range"
     print(Sensors["sensor_0"].percent)
     if Sensors:
-        sensor = Sensors["sensor_0"]
-        if (sensor.percent > 10):
-            arm.vc_set_cartesian_velocity([10, 0, 0, 0, 0, 0])
-            pass
+        sensor1 = Sensors["sensor_0"]
+        sensor2 = Sensors["sensor_1"]
+        x = 0
+        if (sensor1.percent > 80):
+            x = 50
+        elif (sensor1.percent > 50):
+            x = -50
         else:
-            try:
-                arm.vc_set_cartesian_velocity([0, 0, 0, 0, 0, 0])
-            except:
-                pass
+            x = 0
+        if (sensor2.percent > 80):
+            y = 50
+        elif (sensor2.percent > 50):
+            y = -50
+        else:
+            y = 0
+        arm.vc_set_cartesian_velocity([x, y, 0, 0, 0, 0])
+
         return
 
 
