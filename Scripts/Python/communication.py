@@ -28,19 +28,21 @@ class Sensor:
         self.value = 0 # in femtoFarads
         self.lowestValue = 500000 
         self.highestValue = 0
-        self.threshold = 50000
+        self.percent = 0
         #self.timestamp = time.time()
 
     def __str__(self):
-        return f"Sensor(id={self.id}, value={self.value}, lowestValue={self.lowestValue}, highestValue={self.highestValue}, threshold={self.threshold})"
+        return f"Sensor(id={self.id}, value={self.value}, lowestValue={self.lowestValue}, highestValue={self.highestValue}, percent={self.percent}%)"
     
     def Update(self, value):
         self.value = value
+        diff = self.highestValue - self.lowestValue
         if value < self.lowestValue:
             self.lowestValue = value
         if value > self.highestValue:
             self.highestValue = value
-            self.threshold = self.lowestValue + ((self.highestValue - self.lowestValue)*0.35)
+        if diff != 0 :
+            self.percent = ((self.value - self.lowestValue) / diff)*100
 
 # Globals
 SERIAL_PORT = "/dev/tty.usbmodem101"     # Linux/Mac example
@@ -83,13 +85,11 @@ def calibrate_sensors():
             diff = id_max_val[sensor.id] - id_min_val[sensor_id]
             print(f"Sensor {sensor.id} value after hard press: {sensor.value}, min: {id_min_val[sensor.id]}, max: {id_max_val[sensor.id]}")
             
-            # Calculate threshold as 35 % of the difference
+            # Calculate max_value as 300% increase if poor calibration
             
             if abs(diff) < (0.2 * id_min_val[sensor_id]): 
-                sensor.threshold = id_min_val[sensor_id] + 0.35 * id_min_val[sensor_id]  # Set a minimum threshold to avoid too small values
-                print(f"Warning: Sensor {sensor.id} has a very small delta ({diff}). Calibration threshold set to default 35% of initial value.")
-            else:
-                sensor.threshold = id_min_val[sensor_id] + 0.35 * diff
+                sensor.highestValue = 3 * sensor.lowestValue  # Set a minimum threshold to avoid too small values
+                print(f"Warning: Sensor {sensor.id} has a very small delta ({diff}). Calibration max set to default 300% of initial value.")
                 
     # Final confirmation
     user = input("\nCalibration complete. After confirmation, please take a few steps back from the arm\nPress 'y' when ready or 'n' to cancel: ")
