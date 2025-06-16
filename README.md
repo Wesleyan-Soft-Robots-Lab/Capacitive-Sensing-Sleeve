@@ -101,8 +101,138 @@ Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCe
    - click connect, and explore the options of arm controll 
    **NB MAC USERS :**The studio app may flag as unsafe and fail to open the first time. Go to system settings, scroll down and click privacy and security. Then scroll to the bottom and you will see the app listed as an unsafe app that tried to open, click allow anyway
 
-#### <u> Connecting to xArm (Python arm.py script)</u>:
+### <u> Connecting to xArm (Python arm.py script)</u>:
 #### Configuring file libraries and installing modules:
+### 2. Install Required Packages
+
+```bash
+pip install pyserial
+pip install -U git+https://github.com/xArm-Developer/xArm-Python-SDK.git
+```
+
+---
+
+## 🔌 Arduino Setup
+
+### 1. Identify Serial Port
+
+Plug in the Arduino via USB and run:
+
+```bash
+ls /dev/tty.*
+```
+
+Find a port like `/dev/tty.usbmodem11301` and set it in `arm.py`:
+
+```python
+SERIAL_PORT = "/dev/tty.usbmodem11301"
+```
+
+---
+
+## 🌐 xArm Setup
+
+### 1. Verify Network
+
+Ensure both Mac and xArm are on the same subnet (e.g., `192.168.1.x`).
+
+```bash
+ifconfig          # Check Mac IP
+ping 192.168.1.232
+telnet 192.168.1.232 30001
+```
+
+If needed, set your Mac's Ethernet IP manually:
+- IP: `192.168.1.100`
+- Subnet Mask: `255.255.255.0`
+
+Update the script:
+
+```python
+ip = '192.168.1.232'
+arm = XArmAPI(ip)
+```
+
+---
+
+## 🚀 Run the Script
+
+```bash
+python Scripts/Python/arm.py
+```
+
+---
+
+## 🛠️ Setup Fixes & Troubleshooting
+
+### 1. `ModuleNotFoundError: No module named 'serial'`
+
+**Fix:**
+```bash
+source .venv/bin/activate
+pip install pyserial
+```
+
+---
+
+### 2. `ModuleNotFoundError: No module named 'xarm.wrapper'`
+
+**Fix:**
+```bash
+pip install -U git+https://github.com/xArm-Developer/xArm-Python-SDK.git
+```
+
+---
+
+### 3. `SerialException: No such file or directory: 'COM10'`
+
+**Fix:**
+```bash
+ls /dev/tty.*  # Then update SERIAL_PORT in your code
+```
+
+---
+
+### 4. Arduino Not Connecting
+
+**Fix:**
+- Use Arduino IDE → Tools → Port
+- Confirm via:
+```bash
+ls /dev/tty.*
+```
+
+---
+
+### 5. `Exception: connect socket failed`
+
+**Fix:**
+```bash
+ifconfig
+ping 192.168.1.232
+telnet 192.168.1.232 30001
+```
+Or use:  
+[UFactory xArm IP Tool](https://github.com/xArm-Developer/xArm-IP-Tool)
+
+Update:
+```python
+ip = '192.168.1.232'
+```
+
+---
+
+## ✅ Final Tip
+
+Always activate your virtual environment before running anything:
+```bash
+source .venv/bin/activate
+```
+
+And always double-check:
+- Serial port
+- IP address
+- Power to xArm and Arduino
 
 ###
 
