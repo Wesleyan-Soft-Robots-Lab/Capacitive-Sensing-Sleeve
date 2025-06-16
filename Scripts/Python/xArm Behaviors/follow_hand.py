@@ -55,5 +55,5 @@ def followHand():
 
 initArm()
 while True:
-    Sensors = cm.UpdateReadings()
+    Sensors = cm.ReadPort()
     followHand()
