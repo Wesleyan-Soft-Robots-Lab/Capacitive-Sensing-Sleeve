@@ -17,8 +17,8 @@ class Sensor:
     def __init__(self, id):
         self.id = id
         self.value = None # in femtoFarads
-        self.loVal = 18000 
-        self.hiVal = 18000
+        self.loVal = 11000 
+        self.hiVal = 30000
         self.percent = 0
         self.isCalibrated = False
         #self.timestamp = time.time()
@@ -30,16 +30,20 @@ class Sensor:
         scale = self.hiVal - self.loVal
         if (v==0 or scale==0):
             return 0.0
-        return (v - self.loVal) / scale * 100
+        percent = (v - self.loVal) / scale * 100
+        return round(percent, 2)
     
     def Calibrate(self):
         self.isCalibrated = False
         print(f"Calibrating {self.id}")
+
+        self.loVal = self.value
         
         loPointSet = False
+        hpThres = 30 # universal hardpress threshold (%) 
 
-        interval = .2 # in seconds
-        windowSize = 20 # num of intervals
+        interval = .5 # in seconds
+        windowSize = 10 # num of intervals
         window = []
         sum = 0
 
@@ -53,26 +57,25 @@ class Sensor:
             if (delta >= interval):
                 # set Lo
                 if not loPointSet:
-                    print(f"{(windowSize-len(window))*interval} seconds...")
-                    window.append(self.value)
-                    sum += self.value
-                    clock = int(time.time())
-                    print(self.value)
-                    if len(window) > windowSize:
-                        sum -= window.pop(0)
-                    self.loVal = sum / len(window)
-
-                    if self.percent >=80:
+                    if self.value >= self.loVal+(self.loVal*hpThres/100):
                         #break from setting lo point if sensor is hard-pressed
                         loPointSet = True
+
                         self.hiVal = self.loVal + 1000 # set hiVal to be 1000 above loVal
                         window = []
                         sum = 0
                         print(f"Setting Hi point. Hard press {self.id} for {(windowSize-len(window))*interval} seconds...")
-                
+                    else:
+                        print(f"{(windowSize-len(window))*interval} seconds...")
+                        window.append(self.value)
+                        sum += self.value
+                        clock = int(time.time())
+                        if len(window) > windowSize:
+                            sum -= window.pop(0)
+                        self.loVal = sum / len(window)
                 # set Hi
                 else:
-                    if self.percent >= 80:
+                    if self.value >= self.loVal+(self.loVal*hpThres/100):
                         print(f"{(windowSize-len(window))*interval} seconds...")
                         window.append(self.value)
                         sum += self.value
