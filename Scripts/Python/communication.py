@@ -16,12 +16,13 @@ import time
 class Sensor:
     def __init__(self, id):
         self.id = id
-        self.value = None # in femtoFarads
+        self.value = 0 # in femtoFarads
         self.loVal = 11000 
         self.hiVal = 30000
         self.percent = 0
+        self.prevPercent = (self.value, time.time()) # percent,timeStamp of previous known reading
+        self.deltaPercent = ()
         self.isCalibrated = False
-        #self.timestamp = time.time()
 
     def __str__(self):
         return f"Sensor(id={self.id}, value={self.value}, loVal={self.loVal}, hiVal={self.hiVal}, percent={self.percent}, isCalibrated={self.isCalibrated})"
@@ -95,26 +96,25 @@ class Sensor:
             print(f"{self.id} is not calibrated yet.") """
         self.value = value
         self.percent = self.getPercent(value)
+        
+        # delta %
+        prevPer,prevTime = self.prevPercent
+        self.deltaPercent = (self.percent-prevPer, time.time()-prevTime)
+
 """
 Methods 
 """
 def ReadPort()-> dict[int, Sensor]:
     #reads from arduino and updates Sensor vals.
-    # TODO: might be more efficient to request only the sensors needed ie for calibration
-    line = arduino.readline().decode('utf-8').strip()
-    if not line:
-        return None
-    for chunk in line.split(';'):
-        if len(chunk) < 2:
-            continue
-        try:
-            id,val = chunk.split(",")
-            if id not in Sensors:
-                Sensors[id] = Sensor(id)
-            Sensors[id].Update(int(val))  
-        except:
-            continue
-    return Sensors
+    # Format from Arduino: {byte header; int8 id; int16 val; byte tail(optional): '\n'}
+    data = arduino.readline().strip()
+    if len(data) == 4 and data[0] == 0xAA:
+        id = data[1]
+        val = (data[2] << 8) | data[3]
+        
+        if id not in Sensors:
+            Sensors[id] = Sensor(id)
+        Sensors[id].Update(val)  
 
 """ 
 MAIN
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     while True:
         ReadPort()
         for patch in Sensors:
-            if not Sensors["sensor_0"].isCalibrated:
-                Sensors["sensor_0"].Calibrate()
+            if not Sensors[0].isCalibrated:
+                Sensors[0].Calibrate()
                 pass
-            print(Sensors["sensor_0"])
+            print(Sensors[0])
