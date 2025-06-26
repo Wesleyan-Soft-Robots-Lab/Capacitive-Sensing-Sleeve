@@ -93,12 +93,13 @@ public:
 /*************************
       Define Sensors
 **************************/
-#define SENSOR_COUNT 1
+#define SENSOR_COUNT 3
 Sensor sensors[SENSOR_COUNT];
 
 void initSensors() {
   sensors[0] = Sensor(7, ONEA);
-  //sensors[1] = Sensor(7, ONEB);
+  sensors[1] = Sensor(7, ONEB);
+  sensors[2] = Sensor(7, TWOA);
   return;
 }
 
@@ -122,13 +123,26 @@ void Debug() {
   }
   Serial.println();
 }
+void InitTransmit()
+{
+  //Initial Transmit; sends number of sensors
+  int msgLen = 3; // num of bytes
+  byte header = 0x0D;
+  byte tail = '\n';
 
-void TransmitSensor(uint8_t index)
+  byte data[msgLen];
+  data[0] = header;
+  data[1] = (byte) SENSOR_COUNT;
+  data[2] = tail;
+  Serial.write(data, msgLen);
+}
+
+void TransmitSensorData(uint8_t index)
 {
   // Format{byte header; int8 id; int16 val; byte tail='\n'}
   int msgLen = 5; // num of bytes
   byte header = 0xAA;
-  byte tail = '\n'
+  byte tail = '\n';
   Sensor s = sensors[index];
   uint16_t val = s.capacitance;
 
@@ -149,13 +163,14 @@ void setup() {
   Serial.begin(115200);
   Wire.begin();
   initSensors();
+  InitTransmit();
   while (!Serial);
 }
 
 void loop() {
   for (int i = 0; i < SENSOR_COUNT; i++) {
     sensors[i].UpdateSensor();
-    TransmitSensor(i);
+    TransmitSensorData(i);
   }
   //Debug();
 }

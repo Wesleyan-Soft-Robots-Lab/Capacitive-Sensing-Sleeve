@@ -20,14 +20,13 @@ class Sensor:
         self.loVal = 11000 
         self.hiVal = 30000
         self.percent = 0
-        self.prevPercent = (self.value, time.time()) # percent,timeStamp of previous known reading
-        self.deltaPercent = ()
         self.isCalibrated = False
 
     def __str__(self):
         return f"Sensor(id={self.id}, value={self.value}, loVal={self.loVal}, hiVal={self.hiVal}, percent={self.percent}, isCalibrated={self.isCalibrated})"
     
-    def getPercent(self, v)->float:
+    def getPercent(self)->float:
+        v = self.value
         scale = self.hiVal - self.loVal
         if (v==0 or scale==0):
             return 0.0
@@ -44,7 +43,7 @@ class Sensor:
         hpThres = 30 # universal hardpress threshold (%) 
 
         interval = .5 # in seconds
-        windowSize = 10 # num of intervals
+        windowSize = 4 # num of intervals
         window = []
         sum = 0
 
@@ -95,26 +94,30 @@ class Sensor:
         """ if not self.isCalibrated:
             print(f"{self.id} is not calibrated yet.") """
         self.value = value
-        self.percent = self.getPercent(value)
+        self.percent = self.getPercent()
+        #self.delta = self.getDelta()
         
-        # delta %
-        prevPer,prevTime = self.prevPercent
-        self.deltaPercent = (self.percent-prevPer, time.time()-prevTime)
 
 """
 Methods 
 """
 def ReadPort()-> dict[int, Sensor]:
     #reads from arduino and updates Sensor vals.
-    # Format from Arduino: {byte header; int8 id; int16 val; byte tail(optional): '\n'}
+    # Format from Arduino: {byte header; int8 id; int16 val; byte tail: '\n'}
     data = arduino.readline().strip()
-    if len(data) == 4 and data[0] == 0xAA:
+
+    if len(data) == 2 and data[0] == 0x0D:
+        print("___________TEST______________")
+        for i in range(data[1]):
+            Sensors[i] = Sensor()
+    elif len(data) == 4 and data[0] == 0xAA:
         id = data[1]
         val = (data[2] << 8) | data[3]
         
         if id not in Sensors:
             Sensors[id] = Sensor(id)
-        Sensors[id].Update(val)  
+        Sensors[id].Update(val) 
+    return Sensors
 
 """ 
 MAIN
@@ -139,8 +142,9 @@ Start()
 if __name__ == "__main__":
     while True:
         ReadPort()
-        for patch in Sensors:
+        """ for patch in Sensors:
             if not Sensors[0].isCalibrated:
                 Sensors[0].Calibrate()
                 pass
-            print(Sensors[0])
+            print(Sensors[0]) """
+        print(Sensors.keys())
