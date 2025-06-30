@@ -101,50 +101,84 @@ class Sensor:
 """
 Methods 
 """
-def ReadPort()-> dict[int, Sensor]:
-    #reads from arduino and updates Sensor vals.
-    # Format from Arduino: {byte header; int8 id; int16 val; byte tail: '\n'}
-    data = arduino.readline().strip()
-
-    if len(data) == 2 and data[0] == 0x0D:
-        print("___________TEST______________")
-        for i in range(data[1]):
-            Sensors[i] = Sensor()
-    elif len(data) == 4 and data[0] == 0xAA:
-        id = data[1]
-        val = (data[2] << 8) | data[3]
-        
-        if id not in Sensors:
-            Sensors[id] = Sensor(id)
-        Sensors[id].Update(val) 
-    return Sensors
-
-""" 
-MAIN
-"""
-def Start():
-    global Sensors, arduino
-
-    Sensors = dict[int, Sensor]()
+def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
+    """
+    Open serial connection to arduino. Retries until successful.
+    """
     timestamp = time.time()
     printDelay = 5  # seconds
     while True:
         try:
-            arduino = serial.Serial(port='COM10',   baudrate=115200, timeout=.1)
-            break
+            return serial.Serial(port=port,   baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
             if time.time() - timestamp > printDelay:
                 timestamp = time.time()
-                print(f"Error opening serial port. Check if the Arduino is connected...")
+                print(f"Error opening serial port. Check connection...")
+            
+def ReadPort() -> dict[int, Sensor]:
+    """
+    Reads from arduino and updates Sensor vals.
+
+    Returns: updated dict of Sensors
+
+    Format in bytes:
+
+        0xAA 1b|      n    1b |      Sensor Data    3b | *n  | "/n" 1b
+        header | sensor_count | id | val_msb | val_lsb | ... | tail 
+    """
+    try:
+        header = arduino.read(1)
+        if header == b'':
+            print("No data received.")
+            raise
+        elif header == b'\xAA':
+            payload_size = int.from_bytes(arduino.read(1), 'big')
+            for i in range(payload_size):
+                data = arduino.read(3)
+                id = data[0]
+                val = (data[1] << 8) | data[2]
+                if id not in Sensors:
+                    Sensors[id] = Sensor(id)
+                Sensors[id].Update(val)
+
+            tail = arduino.read(1) # bug!! tail not being read correctly
+            """ #print(f"Tail: {tail}") 
+            if tail != b'\x11':
+                #print("Data tail not received correctly.")
+                pass """
+        return Sensors
+    except:
+        print("Error reading from serial port.")
+        return Sensors
+
+"""
+MAIN
+"""
+
+def Start():
+    global Sensors, arduino
+
+    Sensors = dict[int, Sensor]()
+
+    arduino = OpenConnection()
+    print("Serial port opened successfully.")      
 
 Start()
 
 if __name__ == "__main__":
     while True:
-        ReadPort()
-        """ for patch in Sensors:
-            if not Sensors[0].isCalibrated:
-                Sensors[0].Calibrate()
-                pass
-            print(Sensors[0]) """
-        print(Sensors.keys())
+        try:
+            Sensors = ReadPort()
+        except serial.SerialException:
+            print("Serial port disconnected. Check connection...")
+            arduino.close()
+            time.sleep(1)
+            arduino = OpenConnection()
+            continue
+        
+        msg = ""
+        for s in Sensors.values():
+            if not s.isCalibrated:
+                s.Calibrate()
+            msg += f"{s.id}: {s.value}fF ({s.percent}%)\t"
+        print(msg)

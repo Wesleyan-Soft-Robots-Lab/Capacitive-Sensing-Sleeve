@@ -29,7 +29,7 @@ Hardware Setup:
 #define TWOB 3
 
 FDC1004 FDC;
-
+int code = 0;
 /* Defines Sensor obj: 
 includes addr, channel, window, window_sum, capacitance, and ; 
 Sensor() sets defaults (i.e. address & channel = 0)*/
@@ -53,7 +53,7 @@ public:
   // Switches mux port to read from
   void SetBus(uint8_t mux, uint8_t bus) {
     if (bus > 7) {
-      Serial.println("Error: bus must be between 0 and 7");
+      Serial1.println("Error: bus must be between 0 and 7");
       return;
     }
 
@@ -123,36 +123,36 @@ void Debug() {
   }
   Serial.println();
 }
-void InitTransmit()
-{
-  //Initial Transmit; sends number of sensors
-  int msgLen = 3; // num of bytes
-  byte header = 0x0D;
-  byte tail = '\n';
 
-  byte data[msgLen];
-  data[0] = header;
-  data[1] = (byte) SENSOR_COUNT;
-  data[2] = tail;
-  Serial.write(data, msgLen);
-}
-
-void TransmitSensorData(uint8_t index)
+void TransmitData()
 {
-  // Format{byte header; int8 id; int16 val; byte tail='\n'}
-  int msgLen = 5; // num of bytes
+  /*
+  Format in bytes:
+  |  0xAA  |      n       [      Sensor Data       ] *n| "\n" | 
+  | header | sensor_count | id | val_msb | val_lsb |...| tail |
+
+  TODO: add checksum
+  */
+  int msgSize = 3 + SENSOR_COUNT*3;
+
   byte header = 0xAA;
-  byte tail = '\n';
-  Sensor s = sensors[index];
-  uint16_t val = s.capacitance;
-
-  byte data[msgLen];
+  byte count = SENSOR_COUNT;
+  byte tail = 0x11;
+  
+  byte data[msgSize];
   data[0] = header;
-  data[1] = (byte)index;
-  data[2] = (val >> 8) & 0xFF;
-  data[3] = (val) & 0xFF;
-  data[4] = tail;
-  Serial.write(data, msgLen);
+  data[1] = count;
+  // Construct payload
+  for (int i=0; i<SENSOR_COUNT; i++)
+  {
+    int n = 3*i;
+    data[2+n] = (byte) i;
+    uint16_t val = sensors[i].capacitance;
+    data[3+n] = (val>>8) & 0xFF;
+    data[4+n] = (val) & 0xFF;
+  }
+  data[-1] = tail;
+  Serial.write(data, msgSize);
 }
 
 /*
@@ -163,14 +163,13 @@ void setup() {
   Serial.begin(115200);
   Wire.begin();
   initSensors();
-  InitTransmit();
   while (!Serial);
 }
 
 void loop() {
   for (int i = 0; i < SENSOR_COUNT; i++) {
     sensors[i].UpdateSensor();
-    TransmitSensorData(i);
   }
+  TransmitData();
   //Debug();
 }
