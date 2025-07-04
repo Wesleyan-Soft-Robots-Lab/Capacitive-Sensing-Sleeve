@@ -3,14 +3,13 @@ Created by: Miles Modeste
 Last Updated: 6/26/2025
 
 Description:
-  uses multiple sensors and a PID controller to follow hand movement.  
+    uses multiple sensors and a PID controller to follow hand movement.  
 """
 
 import sys
 import os
 import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import communication as cm
 from xarm.wrapper import XArmAPI
 

@@ -1,7 +1,7 @@
 """ 
 Name: Miles Modeste
 Date Created: 6/11/2025
-Last Updated: 6/12/2025
+Last Updated: 6/30/2025
 
 Description:
   This script is used to communicate between the Arduino and Python. This module must be imported in xArm behavior scripts. 
@@ -9,7 +9,6 @@ Description:
 TODO:
     - Add speed check
 """
-import os
 import serial
 import time
 
