@@ -51,7 +51,7 @@ time.sleep(1)
 ip = '192.168.1.232'
 arm = XArmAPI(ip)
 
-Sleeve = dict[int, Sensor]()
+Sensors = dict[int, Sensor]()
 
 def ReadPort() -> bool:
 
@@ -64,10 +64,10 @@ def ReadPort() -> bool:
         if len(chunk) < 2:
             continue
         id,val = chunk.split(",")
-        if id not in Sleeve:
-            Sleeve[id] = Sensor(id)
+        if id not in Sensors:
+            Sensors[id] = Sensor(id)
 
-        Sleeve[id].Update(int(val))
+        Sensors[id].Update(int(val))
 
     return True
 
@@ -87,10 +87,10 @@ def main():
 
     while True:
         ReadPort()
-        print(Sleeve["sensor_0"].value)
-        if Sleeve:
+        print(Sensors["sensor_0"].value)
+        if Sensors:
             try:
-                if Sleeve["sensor_0"].value <= 18000:
+                if Sensors["sensor_0"].value <= 18000:
                     arm.move_gohome()
                     #print(arm.get_sergo_angle())
                 else:
