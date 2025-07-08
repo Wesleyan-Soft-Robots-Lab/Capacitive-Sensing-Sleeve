@@ -93,13 +93,14 @@ public:
 /*************************
       Define Sensors
 **************************/
-#define SENSOR_COUNT 3
+#define SENSOR_COUNT 4
 Sensor sensors[SENSOR_COUNT];
 
 void initSensors() {
   sensors[0] = Sensor(7, ONEA);
   sensors[1] = Sensor(7, ONEB);
   sensors[2] = Sensor(7, TWOA);
+  sensors[3] = Sensor(7, TWOB);
   return;
 }
 

@@ -13,18 +13,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import communication as cm
 from xarm.wrapper import XArmAPI
 
-Sensors = dict[int, cm.Sensor]()
 ip = '192.168.1.232'
 try:
     arm = XArmAPI(ip)
 except:
     pass
 
-minThres = 1.5 # lowest value(%) where hand detected
+minThres = 1.3 # lowest value(%) where hand detected
 targetThres = 9 # thres value(%) when arm chases towards vs moves away from hand
 prevTime = time.time()
 currentTime = 0.1
-
 armVelocity = [0,0,0]
 
 class PIDController:
@@ -55,7 +53,13 @@ class PIDController:
         output = P_out + I_out + D_out
         return output
 
-def init():
+def Init():
+    global Sensors, Controllers
+    Sensors = dict[int, cm.Sensor]()
+    Controllers = dict[int, PIDController]()
+    [int, [cm.Sensor, PIDController, str]]
+    Initialized = False
+
     arm.motion_enable(enable=True)
     arm.set_mode(0) # look into mode 4: joint velocity control
     arm.set_state(state=0)
@@ -69,32 +73,48 @@ def init():
     arm.set_state(0)
 
     time.sleep(1)
+    while not Initialized:
+        Sensors = cm.ReadPort()
+        for idx in Sensors:
+            if not Sensors[idx].isCalibrated:
+                Sensors[idx].Calibrate()
+                Controllers[idx] = PIDController(Kp=5, Ki=0, Kd=1.2, target=targetThres)
+            if all(s.isCalibrated for s in Sensors.values()):
+                Initialized = True
+    
+    print("Initialization Complete...") 
     return
 
 def followHand():
-    global prevTime, currentTime, pid
     xv, yv, zv = 0, 0, 0
 
     if Sensors:
-        sensor1 = Sensors[0]
+        """ sensor1 = Sensors[0]
         if (not sensor1.isCalibrated):
             sensor1.Calibrate()
             pid = PIDController(Kp=5, Ki=0, Kd=1.2, target=targetThres)
             time.sleep(1)
         
         if ((minThres < sensor1.percent)):
-            """ currentTime = time.time()
-            dt = currentTime - prevTime
-            prevTime = currentTime """
-            yv = pid.compute(sensor1.percent, 0.1)
+            zv = pid.compute(sensor1.percent, 0.1)
 
-        print(f"{sensor1.percent} || {yv}")
+        print(f"{sensor1.percent} || {yv}") """
+                 
+        if ((minThres < Sensors[3].percent)):
+            yv += Controllers[3].compute(Sensors[3].percent, 0.1)
+        if ((minThres < Sensors[1].percent)):
+            yv -= Controllers[1].compute(Sensors[1].percent, 0.1)
+        if ((minThres < Sensors[2].percent)):
+            xv += Controllers[2].compute(Sensors[2].percent, 0.1)
+        if ((minThres < Sensors[0].percent)):
+            zv += Controllers[0].compute(Sensors[0].percent, 0.1)
+
         arm.vc_set_cartesian_velocity([xv, yv, zv, 0, 0, 0], duration=0)
 
         return
 
 if __name__ == "__main__":
-    init()
+    Init()
     while True:
         Sensors = cm.ReadPort()
         followHand()

@@ -46,46 +46,42 @@ class Sensor:
         window = []
         sum = 0
 
-        print(f"Setting Low point. Don't touch for {(windowSize-len(window))*interval} seconds...")
-        clock = int(time.time())
+        print(f"Setting Low point. Don't touch for {(windowSize-len(window))*interval:.1f} seconds...")
+        clock = time.time()
         while (self.isCalibrated == False):
             # wait for interval b4 update
             # TODO: replace ReadPort() with single sensor read 
             ReadPort()
-            delta = int(time.time()) - clock
+            delta = time.time() - clock
             if (delta >= interval):
                 # set Lo
                 if not loPointSet:
-                    if self.value >= self.loVal+(self.loVal*hpThres/100):
-                        #break from setting lo point if sensor is hard-pressed
+                    print(f"{(windowSize-len(window))*interval:.1f} seconds...")
+                    window.append(self.value)
+                    sum += self.value
+                    clock = time.time()
+                    if len(window) > windowSize:
+                        sum -= window.pop(0)
+                        self.loVal = sum / len(window)
                         loPointSet = True
 
                         self.hiVal = self.loVal + 1000 # set hiVal to be 1000 above loVal
                         window = []
                         sum = 0
-                        print(f"Setting Hi point. Hard press {self.id} for {(windowSize-len(window))*interval} seconds...")
-                    else:
-                        print(f"{(windowSize-len(window))*interval} seconds...")
-                        window.append(self.value)
-                        sum += self.value
-                        clock = int(time.time())
-                        if len(window) > windowSize:
-                            sum -= window.pop(0)
-                        self.loVal = sum / len(window)
+                        print(f"Setting Hi point. Hard press {self.id} for {(windowSize-len(window))*interval:.1f} seconds...")
                 # set Hi
                 else:
                     if self.value >= self.loVal+(self.loVal*hpThres/100):
-                        print(f"{(windowSize-len(window))*interval} seconds...")
+                        print(f"{(windowSize-len(window))*interval:.1f} seconds...")
                         window.append(self.value)
                         sum += self.value
-                        clock = int(time.time())
-                        if len(window) >= windowSize:
-                            # break
+                        clock = time.time()
+                        if len(window) > windowSize:
                             self.isCalibrated = True
                         self.hiVal = sum / len(window)
                     else:
-                        print(f"Hard-press on {self.id} NOT detected...")
-                        clock = int(time.time())
+                        print(f"Hard-press {self.id}...")
+                        clock = time.time()
                         continue
         return
     
@@ -126,6 +122,7 @@ def ReadPort() -> dict[int, Sensor]:
         header | sensor_count | id | val_msb | val_lsb | ... | tail 
     """
     try:
+        time.sleep(.02)
         header = arduino.read(1)
         if header == b'':
             print("No data received.")
@@ -141,10 +138,7 @@ def ReadPort() -> dict[int, Sensor]:
                 Sensors[id].Update(val)
 
             tail = arduino.read(1) # bug!! tail not being read correctly
-            """ #print(f"Tail: {tail}") 
-            if tail != b'\x11':
-                #print("Data tail not received correctly.")
-                pass """
+            #print(f"Tail: {tail}") 
         return Sensors
     except:
         print("Error reading from serial port.")
