@@ -20,39 +20,63 @@ Sensors = {
 ct.set_appearance_mode("System")
 ct.set_default_color_theme("blue")
 
-""" class SensorListFrame(ct.CTkFrame):
+class ListSelectionFrame(ct.CTkFrame):
     def __init__(self, master, title, values):
         super().__init__(master)
         self.grid_columnconfigure(0, weight=1)
-        self.values = values
+
         self.title = title
-        self.radiobuttons = []
-        self.variable = ct.StringVar(value="")
-
         self.title = ct.CTkLabel(self, text=self.title, fg_color="gray30", corner_radius=6)
-        self.title.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="ew")
+        self.title.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="nw")
 
-        for i, value in enumerate(self.values):
-            radiobutton = ct.CTkRadioButton(self, text=value, value=value, variable=self.variable)
-            radiobutton.grid(row=i + 1, column=0, padx=10, pady=(10, 0), sticky="w")
+        self.values = values
+        self.radiobuttons = []
+        self.variable = ct.StringVar(value="") # stores value of selected btn w/in frame
+
+        #create buttons
+        for v in self.values:
+            radiobutton = ct.CTkRadioButton(self, text=f"s{v}", value=v, variable=self.variable)
+            radiobutton.grid(row=v + 1, column=0, padx=10, pady=(10, 0), sticky="w")
             self.radiobuttons.append(radiobutton)
 
     def get(self):
         return self.variable.get()
-
+    #i dont think i need this 
     def set(self, value):
         self.variable.set(value)
 
 class SensorDataFrame(ct.CTkFrame):
-    def __init__(self, master, title, values):
+    def __init__(self, master, list):
         super().__init__(master)
         self.grid_columnconfigure(0, weight=1)
-        #self.id = id
-        #self.value = 0 # in femtoFarads
-        #self.loVal = 11000 
-        #self.hiVal = 30000
-        #self.percent = 0
-        #self.isCalibrated = False
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(3, weight=1)
+        self.grid_rowconfigure(0, weight=0)
+
+        self.listFrame = list
+        #title/name of selected sensor
+        self.title = "No Sensor Selected"
+        self.title = ct.CTkLabel(self, text=self.title, fg_color="gray30", corner_radius=6)
+        self.title.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="new")
+        #textbox showing data
+        self.textbox = ct.CTkTextbox(self,fg_color="gray30",  corner_radius=6)
+        self.textbox.grid(row=0, column=0, columnspan=4, padx=10, pady=(10, 0), sticky="new")
+        self.textbox.insert("0.0", "Value:\nPercent:")
+
+        self.hi_label = ct.CTkLabel(self, text="High Point:", fg_color="gray30", corner_radius=6)
+        self.hi_label.grid(row=2, column=0, columnspan=3, rowspan=2, padx=10, pady=(10, 0), sticky="new")
+        self.hi_increase = ct.CTkButton(self, text="+",fg_color="gray30", corner_radius=6)
+        self.hi_increase.grid(row=2, column=3, padx=10, pady=(10, 0), sticky="nsw")
+        self.hi_decrease = ct.CTkButton(self, text="-",fg_color="gray30", corner_radius=6)
+        self.hi_decrease.grid(row=3, column=3, padx=10, pady=(10, 0), sticky="nsw")
+
+        self.lo_label = ct.CTkLabel(self, text="Low Point:", fg_color="gray30", corner_radius=6) 
+        self.lo_label.grid(row=4, column=0, columnspan=3, rowspan=2, padx=10, pady=(10, 0), sticky="new")
+        self.lo_increase = ct.CTkButton(self, text="+",fg_color="gray30", corner_radius=6)
+        self.lo_increase.grid(row=4, column=3, padx=10, pady=(10, 0), sticky="nsw")
+        self.lo_decrease = ct.CTkButton(self, text="-",fg_color="gray30", corner_radius=6)
+        self.lo_decrease.grid(row=5, column=3, padx=10, pady=(10, 0), sticky="nsw")
 
     def set(self, sensor):
         self.variable.set(sensor)
@@ -66,12 +90,13 @@ class GUI(ct.CTk):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        values = ["value 1", "value 2", "value 3", "value 4", "value 5", "value 6"] #num sensors in dict
-        self.scrollable_radiobtn_frame = SensorListFrame(self, title="Sensors", values=values)
-        self.scrollable_radiobtn_frame.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="nsew")
+        ids = Sensors.keys()
+        self.sensor_btn_frame = ListSelectionFrame(self, title="Sensors", values=ids)
+        self.sensor_btn_frame.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="nsw")
 
-        self.button = ct.CTkButton(self, text="my button", command=self.button_callback)
-        self.button.grid(row=3, column=0, padx=10, pady=10, sticky="ew", columnspan=2)
+        self.sensor_display_frame = SensorDataFrame(self, list=self.sensor_btn_frame)
+        self.sensor_display_frame.grid(row=0, column=2, padx=10, pady=(10, 0), sticky="nsew")
 
-    def button_callback(self):
-        print("radiobutton_frame:", self.radiobutton_frame.get()) """
+sensorGUI = GUI()
+
+sensorGUI.mainloop()
