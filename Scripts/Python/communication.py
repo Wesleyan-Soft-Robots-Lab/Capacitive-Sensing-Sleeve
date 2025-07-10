@@ -6,8 +6,6 @@ Last Updated: 6/30/2025
 Description:
   This script is used to communicate between the Arduino and Python. This module must be imported in xArm behavior scripts. 
 
-TODO:
-    - Add speed check
 """
 import serial
 import time
@@ -16,8 +14,8 @@ class Sensor:
     def __init__(self, id):
         self.id = id
         self.value = 0 # in femtoFarads
-        self.loVal = 11000 
-        self.hiVal = 30000
+        self.loVal = 6000 
+        self.hiVal = 50000
         self.percent = 0
         self.isCalibrated = False
 
@@ -147,14 +145,13 @@ def ReadPort() -> dict[int, Sensor]:
 """
 MAIN
 """
-
 def Start():
     global Sensors, arduino
 
     Sensors = dict[int, Sensor]()
 
     arduino = OpenConnection()
-    print("Serial port opened successfully.")      
+    print("Serial port opened successfully.")     
 
 Start()
 
@@ -168,7 +165,7 @@ if __name__ == "__main__":
             time.sleep(1)
             arduino = OpenConnection()
             continue
-        
+
         msg = ""
         for s in Sensors.values():
             if not s.isCalibrated:
