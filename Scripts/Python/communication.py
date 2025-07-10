@@ -30,6 +30,7 @@ class Sensor:
         self.highestValue = 0
         self.percent = 0
         #self.timestamp = time.time()
+        self.isCalibrated = False  # Flag to check if sensor is calibrated
 
     def __str__(self):
         return f"Sensor(id={self.id}, value={self.value}, lowestValue={self.lowestValue}, highestValue={self.highestValue}, percent={self.percent}%)"
@@ -65,9 +66,7 @@ Methods
 """
 #safety check before running the script - calibrate sensors
 
-def updatereadings() -> dict[int, Sensor]:
-    ReadPort()
-    return Sleeve
+
     
 def calibrate_sensors():
     print("Sensors stabilizing...")
@@ -80,8 +79,8 @@ def calibrate_sensors():
    # **no need for memory data structure right now since we have few sensors and can calibrate one at a time, keeping this dict for when there are more sensors and we want to calibrate in parallel.**
     id_min_val = {} 
     id_max_val = {}
-
-    for sensor_id, sensor in Sleeve.items():
+    
+    for sensor_id, sensor in enumerate(Sleeve):
         id_min_val[sensor_id] = sensor.value  # Baseline value before press
 
         print(f"\nPlease hard press on sensor {sensor.id} to calibrate.\n")
@@ -101,6 +100,7 @@ def calibrate_sensors():
             if abs(diff) < (0.2 * id_min_val[sensor_id]): 
                 sensor.highestValue = 3 * sensor.lowestValue  # Set a minimum threshold to avoid too small values
                 print(f"Warning: Sensor {sensor.id} has a very small delta ({diff}). Calibration max set to default 300% of initial value.")
+        sensor.isCalibrated = True  # Mark sensor as calibrated
                 
     # Final confirmation
     user = input("\nCalibration complete. After confirmation, please take a few steps back from the arm\nPress 'y' when ready or 'n' to cancel: ")
@@ -180,9 +180,11 @@ def Start():
 Start()
 
 if __name__ == "__main__":
+    global Sleeve 
+    Sleeve = dict[int, Sensor]()
     while True:
         try:
-            Sensors = ReadPort()
+            Sleeve = ReadPort()
         except serial.SerialException:
             print("Serial port disconnected. Check connection...")
             arduino.close()
@@ -191,7 +193,7 @@ if __name__ == "__main__":
             continue
         
         msg = ""
-        for s in Sensors.values():
+        for s in Sleeve.values():
             if not s.isCalibrated:
                 s.Calibrate()
             msg += f"{s.id}: {s.value}fF ({s.percent}%)\t"
