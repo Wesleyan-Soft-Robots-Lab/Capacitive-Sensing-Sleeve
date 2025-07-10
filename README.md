@@ -78,7 +78,8 @@ Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCe
 * [User manual](https://www.ufactory.cc/wp-content/uploads/2023/05/xArm-User-Manual-V2.0.0.pdf)
 ### <u> Connecting to xArm (Using the ufactory studio app)</u>:
 1. Double check all cables are properly connected and "Emergency Stop" button is up. All leds should be lit (Flickering LAN leds are OK, it's working) There is a sticker with an IP address labeled **192.168.232** !Remember where to find this!
-2. Configure IP Address: (someone who hasn't connected to the arm b4, please confirm if step is necessary. I think you might only need to wait for the 3 beeps for the server to get ready).
+2. Wait for 3 beeps after around 1 min. means the arm block server is ready to connect.
+3. Configure IP Address: (someone who hasn't connected to the arm b4, please confirm if step is necessary. I think you might only need to wait for the 3 beeps for the server to get ready).
     #### Windows 11:
     1. Open your **Control Panel**
     2. Navigate to: <u>Network and Internet</u> > <u>Network and Sharing Center</u>
@@ -89,152 +90,17 @@ Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCe
     7. Hit **OK** and **Close** to confirm settings
     
     #### Mac:
-    ## Getting a feel through Ufactory studion GUI:
     1. Connect the ethernet cable from the arm set up to your computer
     2. navigate to system settings --> Network --> Ethernet.
     3. Select **<u>USB 10/100/1000LAN</u>** --> click **details** --> **TCP/IP**, and set **<u>configure IPv4</u>** to **manually**
     4. Set IP: **192.168.1.x**; and Subnet Mask: **255.255.255.0** (x can be anything from 0-255. **! Do NOT choose same ip as sticker !**), confirm settings.
-
-### Download and set up UFactory studio app:
-   - [download ufactory studio app on your machine](https://www.ufactory.us/ufactory-studio)
-   - open and enter 192.168.1.232(IP address found on the arm block sticker) onto the search bar
-   - click connect, and explore the options of arm controll 
+4. Download and set up UFactory studio app:
+   1. [download ufactory studio app on your machine](https://www.ufactory.us/ufactory-studio)
+   2. open and enter 192.168.1.232 (IP address found on the arm block sticker) into the search bar
+   3. click connect, and explore the options of arm control
    **NB MAC USERS :**The studio app may flag as unsafe and fail to open the first time. Go to system settings, scroll down and click privacy and security. Then scroll to the bottom and you will see the app listed as an unsafe app that tried to open, click allow anyway
 
-### <u> Connecting to xArm (Python arm.py script)</u>:
-#### Configuring file libraries and installing modules:
-### 2. Install Required Packages
-
-```bash
-pip install pyserial
-pip install -U git+https://github.com/xArm-Developer/xArm-Python-SDK.git
-```
-
----
-
-## 🔌 Arduino Setup
-
-### 1. Identify Serial Port
-
-Plug in the Arduino via USB and run:
-
-```bash
-ls /dev/tty.*
-```
-
-Find a port like `/dev/tty.usbmodem11301` and set it in `arm.py`:
-
-```python
-SERIAL_PORT = "/dev/tty.usbmodem11301"
-```
-
----
-
-## 🌐 xArm Setup
-
-### 1. Verify Network
-
-Ensure both Mac and xArm are on the same subnet (e.g., `192.168.1.x`).
-
-```bash
-ifconfig          # Check Mac IP
-ping 192.168.1.232
-telnet 192.168.1.232 30001
-```
-
-If needed, set your Mac's Ethernet IP manually:
-- IP: `192.168.1.100`
-- Subnet Mask: `255.255.255.0`
-
-Update the script:
-
-```python
-ip = '192.168.1.232'
-arm = XArmAPI(ip)
-```
-
----
-
-## 🚀 Run the Script
-
-```bash
-python Scripts/Python/arm.py
-```
-
----
-
-## 🛠️ Setup Fixes & Troubleshooting
-
-### 1. `ModuleNotFoundError: No module named 'serial'`
-
-**Fix:**
-```bash
-source .venv/bin/activate
-pip install pyserial
-```
-
----
-
-### 2. `ModuleNotFoundError: No module named 'xarm.wrapper'`
-
-**Fix:**
-```bash
-pip install -U git+https://github.com/xArm-Developer/xArm-Python-SDK.git
-```
-
----
-
-### 3. `SerialException: No such file or directory: 'COM10'`
-
-**Fix:**
-```bash
-ls /dev/tty.*  # Then update SERIAL_PORT in your code
-```
-
----
-
-### 4. Arduino Not Connecting
-
-**Fix:**
-- Use Arduino IDE → Tools → Port
-- Confirm via:
-```bash
-ls /dev/tty.*
-```
-
----
-
-### 5. `Exception: connect socket failed`
-
-**Fix:**
-```bash
-ifconfig
-ping 192.168.1.232
-telnet 192.168.1.232 30001
-```
-Or use:  
-[UFactory xArm IP Tool](https://github.com/xArm-Developer/xArm-IP-Tool)
-
-Update:
-```python
-ip = '192.168.1.232'
-```
-
----
-
-## ✅ Final Tip
-
-Always activate your virtual environment before running anything:
-```bash
-source .venv/bin/activate
-```
-
-And always double-check:
-- Serial port
-- IP address
-- Power to xArm and Arduino
-
-###
+#### <u> Connecting to xArm (Python arm.py script)</u>:
 
 # Helpful Information
 * [Measuring a Single Capcitor](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/blob/main/capacitance/README-cap.md?plain=1#additional-resources)

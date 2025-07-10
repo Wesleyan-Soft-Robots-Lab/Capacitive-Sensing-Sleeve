@@ -35,6 +35,26 @@ time.sleep(1)
 ip = '192.168.1.232'
 arm = XArmAPI(ip)
 
+Sensors = dict[int, Sensor]()
+
+def ReadPort() -> bool:
+
+    line = arduino.readline().decode('utf-8').strip()
+
+    if not line:
+        return False
+    
+    for chunk in line.split(';'):
+        if len(chunk) < 2:
+            continue
+        id,val = chunk.split(",")
+        if id not in Sensors:
+            Sensors[id] = Sensor(id)
+
+        Sensors[id].Update(int(val))
+
+    return True
+
 Sleeve = dict[int, Sensor]()
 def main():
     arm.motion_enable(enable=True)

@@ -2,10 +2,10 @@
 Author: Miles Modeste
 Co-editor: Yamani Mpofu
 Date Created: 6/11/2025
-Last Updated: 6/12/2025
+Last Updated: 6/30/2025
 
 Description:
-  This script is used to communicate between the Arduino and Python and test the speed of different encoding methods. 
+  This script is used to communicate between the Arduino and Python. This module must be imported in xArm behavior scripts. 
 
 TODO:
     - Saftey feature to not be able to read measurements until sensor hi/lo has been
@@ -34,7 +34,18 @@ class Sensor:
     def __str__(self):
         return f"Sensor(id={self.id}, value={self.value}, lowestValue={self.lowestValue}, highestValue={self.highestValue}, percent={self.percent}%)"
     
+    def getPercent(self)->float:
+        v = self.value
+        scale = self.highestValue - self.lowestValue
+        if (v==0 or scale==0):
+            return 0.0
+        percent = (v - self.lowestValue) / scale * 100
+        return round(percent, 2)
+
+    
     def Update(self, value):
+        """ if not self.isCalibrated:
+            print(f"{self.id} is not calibrated yet.") """
         self.value = value
         diff = self.highestValue - self.lowestValue
         if value < self.lowestValue:
@@ -106,52 +117,82 @@ def calibrate_sensors():
     return True
 
     
-def ReadPort() -> bool:
-
-    line = arduino.readline().decode('utf-8').strip()
-
-    if not line:
-        return False
-    
-    for chunk in line.split(';'):
-        if len(chunk) < 2:
-            continue
-        id,val = chunk.split(",")
-
-        if id not in Sleeve:
-            Sleeve[id] = Sensor(id)
-
-        Sleeve[id].Update(int(val))
-
-    return True
-
-def main():
-    global arduino, Sleeve
-
-    Sleeve = dict[int, Sensor]()
-
+def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
+    """
+    Open serial connection to arduino. Retries until successful.
+    """
     timestamp = time.time()
     printDelay = 5  # seconds
     while True:
         try:
-            arduino = serial.Serial(port= SERIAL_PORT,   baudrate=115200, timeout=.1)
-            break
+            return serial.Serial(port=port,   baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
             if time.time() - timestamp > printDelay:
                 timestamp = time.time()
-                print(f"Error opening serial port. Check if the Arduino is connected...")
-    
-    
+                print(f"Error opening serial port. Check connection...")
+            
+def ReadPort() -> dict[int, Sensor]:
+    """
+    Reads from arduino and updates Sensor vals.
 
+    Returns: updated dict of Sensors
 
-main()
+    Format in bytes:
 
-if __name__=="__main__":
-    #implementing the safety check before running the script
-    if calibrate_sensors():
-        while True:
-            ReadPort()
-            for patch in Sleeve:
-                print(Sleeve[patch])
-    else:
-        print("Calibration failed. Exiting...")
+        0xAA 1b|      n    1b |      Sensor Data    3b | *n  | "/n" 1b
+        header | sensor_count | id | val_msb | val_lsb | ... | tail 
+    """
+    try:
+        time.sleep(.02)
+        header = arduino.read(1)
+        if header == b'':
+            print("No data received.")
+            raise
+        elif header == b'\xAA':
+            payload_size = int.from_bytes(arduino.read(1), 'big')
+            for i in range(payload_size):
+                data = arduino.read(3)
+                id = data[0]
+                val = (data[1] << 8) | data[2]
+                if id not in Sensors:
+                    Sensors[id] = Sensor(id)
+                Sensors[id].Update(val)
+
+            tail = arduino.read(1) # bug!! tail not being read correctly
+            #print(f"Tail: {tail}") 
+        return Sensors
+    except:
+        print("Error reading from serial port.")
+        return Sensors
+
+"""
+MAIN
+"""
+
+def Start():
+    global Sensors, arduino
+
+    Sensors = dict[int, Sensor]()
+
+    arduino = OpenConnection()
+    print("Serial port opened successfully.")      
+
+Start()
+
+if __name__ == "__main__":
+    while True:
+        try:
+            Sensors = ReadPort()
+        except serial.SerialException:
+            print("Serial port disconnected. Check connection...")
+            arduino.close()
+            time.sleep(1)
+            arduino = OpenConnection()
+            continue
+        
+        msg = ""
+        for s in Sensors.values():
+            if not s.isCalibrated:
+                s.Calibrate()
+            msg += f"{s.id}: {s.value}fF ({s.percent}%)\t"
+        print(msg)
