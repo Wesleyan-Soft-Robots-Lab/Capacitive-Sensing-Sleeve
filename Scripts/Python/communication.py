@@ -14,8 +14,8 @@ class Sensor:
     def __init__(self, id):
         self.id = id
         self.value = 0 # in femtoFarads
-        self.loVal = 6000 
-        self.hiVal = 50000
+        self.loVal = 4400 
+        self.hiVal = 48000
         self.percent = 0
         self.isCalibrated = False
 

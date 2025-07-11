@@ -14,7 +14,7 @@ import pandas as pd
 import csv
 import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import communication as cm
+import communication as comm
 
 def DisplayData():
     #calculate std of each sensor
@@ -53,7 +53,7 @@ def init():
     #runTimeInpt = input("Run time (min) *enter for default(1)*: ")
     runTime = 180
 
-    Sensors = dict[int, cm.Sensor]()
+    Sensors = dict[int, comm.Sensor]()
 
 if __name__ == "__main__":
     init()
@@ -69,14 +69,14 @@ if __name__ == "__main__":
     while True:
         if time.time() - start > 2:
             break
-        Sensors = cm.ReadPort()
+        Sensors = comm.ReadPort()
 
     print("Starting data recording...")
 
     start = time.time()
     rows = []
     while (time.time() - start < runTime):
-        Sensors = cm.ReadPort()
+        Sensors = comm.ReadPort()
         t = time.time() - start
         for s in Sensors.values():
             rows.append({
