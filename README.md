@@ -104,4 +104,5 @@ Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCe
 
 # Helpful Information
 * [Measuring a Single Capcitor](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/blob/main/capacitance/README-cap.md?plain=1#additional-resources)
+* [xArm sdk](https://github.com/xArm-Developer/xArm-Python-SDK)
 # Credits
