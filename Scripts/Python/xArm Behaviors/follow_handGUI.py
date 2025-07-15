@@ -63,21 +63,19 @@ class PIDController:
         return output
 
 def Init():
-    global Sensors, Controllers
+    global Sensors, Controllers, arm
     Sensors = dict[int, comm.Sensor]()
     Controllers = dict[int, PIDController]()
 
     arm.motion_enable(enable=True)
     arm.set_mode(0) # look into mode 4: joint velocity control
     arm.set_state(state=0)
-
     speed = 40
-    arm.move_gohome(speed=speed, wait=True)
-
     arm.set_servo_angle(angle=[0,20.7,-37.7,0,16.9,0], speed=speed, wait=True)
-
     arm.set_mode(5)
     arm.set_state(0)
+
+    #arm.motion_enable(enable=False)
 
     while not Sensors:
         Sensors = comm.ReadPort()
@@ -86,6 +84,13 @@ def Init():
         Controllers[s.id] = PIDController(Kp=6, Ki=1, Kd=1.2, target=targetThres)
 
     time.sleep(1)
+    return
+
+def ToggleLock():
+    if arm.state == 4:
+        arm.motion_enable(enable=True)
+    elif arm.state == 2:
+        arm.motion_enable(enable=False)
     return
 
 def followHand(sensors:dict[int,comm.Sensor]):
@@ -109,5 +114,5 @@ def followHand(sensors:dict[int,comm.Sensor]):
 
 if __name__ == "__main__":
     Init()
-    screen = gui.GUI(Sensors, followHand)
+    screen = gui.GUI(Sensors, arm_behaviour_callback=followHand, arm_data_callback=arm.get_servo_angle)
     screen.mainloop()
