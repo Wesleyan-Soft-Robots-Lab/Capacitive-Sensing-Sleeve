@@ -20,7 +20,7 @@ try:
 except:
     pass
 
-minThres = 1 # lowest value(%) where hand detected
+minThres = .8 # lowest value(%) where hand detected
 targetThres = 4 # thres value(%) when arm chases towards vs moves away from hand
 prevTime = time.time()
 currentTime = 0.1
@@ -71,7 +71,7 @@ def Init():
     arm.set_mode(0) # look into mode 4: joint velocity control
     arm.set_state(state=0)
     speed = 40
-    arm.set_servo_angle(angle=[0,20.7,-37.7,0,16.9,0], speed=speed, wait=True)
+    arm.set_servo_angle(angle=[0,-2.9,-26.8,0,29.8,0], speed=speed, wait=True)
     arm.set_mode(5)
     arm.set_state(0)
 
@@ -81,7 +81,7 @@ def Init():
         Sensors = comm.ReadPort()
 
     for s in Sensors.values():
-        Controllers[s.id] = PIDController(Kp=6, Ki=1, Kd=1.2, target=targetThres)
+        Controllers[s.id] = PIDController(Kp=6, Ki=.8, Kd=1.2, target=targetThres)
 
     time.sleep(1)
     return

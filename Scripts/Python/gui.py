@@ -16,7 +16,7 @@ import communication as comm
 import pandas as pd
 import json
 import time
-import cv2
+#import cv2
 
 # System Settings
 ct.set_appearance_mode("System")
@@ -66,18 +66,18 @@ class ControlButtons(ct.CTkFrame):
     def __init__(self, master, attr):
         super().__init__(master)
         # - buttons
-        self.minus1_btn = ct.CTkButton(self, text="-1", fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -1))
+        self.minus1_btn = ct.CTkButton(self, text="-10", fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -10))
         self.minus1_btn.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-        self.minus10_btn = ct.CTkButton(self, text="-10",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -10))
+        self.minus10_btn = ct.CTkButton(self, text="-100",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -100))
         self.minus10_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        self.minus100_btn = ct.CTkButton(self, text="-100",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -100))
+        self.minus100_btn = ct.CTkButton(self, text="-1000",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -1000))
         self.minus100_btn.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
         # + buttons
-        self.plus100_btn = ct.CTkButton(self, text="+100",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 100))
+        self.plus100_btn = ct.CTkButton(self, text="+1000",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 1000))
         self.plus100_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
-        self.plus10_btn = ct.CTkButton(self, text="+10",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 10))
+        self.plus10_btn = ct.CTkButton(self, text="+100",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 100))
         self.plus10_btn.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
-        self.plus1_btn = ct.CTkButton(self, text="+1",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 1))
+        self.plus1_btn = ct.CTkButton(self, text="+10",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 10))
         self.plus1_btn.grid(row=0, column=5, padx=5, pady=5, sticky="ew")
 
     def ChangeVal(self, attr, val):
@@ -212,7 +212,7 @@ class RecordModule(ct.CTkFrame):
         self.entry_btn = ct.CTkButton(self,width=0, text="Submit", command=self.ChangeName)
         self.entry_btn.grid(row=1, column=1)
 
-        #video capture init
+        """ #video capture init
         try:
             self.cam = cv2.VideoCapture(0)
 
@@ -221,7 +221,7 @@ class RecordModule(ct.CTkFrame):
             self.fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             #self.vid_out_File = cv2.VideoWriter(os.path.join(self.vidPath, self.filename_var.get)+'.mp4', self.fourcc, 30.0, (self.cam_width, self.cam_height))
         except:
-            self.cam = None
+            self.cam = None """
 
     def ChangeName(self):
         self.dir_label.configure(text=f"file loc: tests/data/{self.filename_var.get()}.csv")
@@ -231,15 +231,15 @@ class RecordModule(ct.CTkFrame):
         if self.isRecording == False:
             self.record_btn.configure(text="Stop", fg_color="gray")
             self.data = []
-            if self.cam:
+            """ if self.cam:
                 name = self.filename_var.get()
-                self.vid_out_File = cv2.VideoWriter(os.path.join(self.vidPath, name)+'.mp4', self.fourcc, 30.0, (self.cam_width, self.cam_height))
+                self.vid_out_File = cv2.VideoWriter(os.path.join(self.vidPath, name)+'.mp4', self.fourcc, 30.0, (self.cam_width, self.cam_height)) """
             self.isRecording = True
         #End Recording
         elif self.isRecording == True:
             self.record_btn.configure(text="Record", fg_color="red")
-            if self.cam:
-                self.vid_out_File.release()
+            """ if self.cam:
+                self.vid_out_File.release() """
             self.Save()
             self.isRecording = False
         return
@@ -256,11 +256,11 @@ class RecordModule(ct.CTkFrame):
             row["arm_pos"] = armData
         self.data.append(row)
 
-        # video record
+        """ # video record
         if self.cam:
             ret, frame = self.cam.read()
             self.vid_out_File.write(frame)
-            pass
+            pass """
 
     def Save(self):
         filePath = os.path.join(self.dataPath, self.filename_var.get())+'.csv'
