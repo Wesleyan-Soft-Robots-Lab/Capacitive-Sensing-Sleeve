@@ -246,7 +246,7 @@ class RecordModule(ct.CTkFrame):
     
     def Record(self):
         #data record
-        row = {"time": f"{time.time()/60:.2f}"}
+        row = {"time": f"{time.time()}"}
         sensorsInp = self.master.sensors
         armData = self.master.arm_data_callback()
         for k,v in sensorsInp.items():
