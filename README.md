@@ -63,7 +63,7 @@ To get the [FDC1004](#fdc1004) working you need to install [Protocentral api](#p
 * C2: [.1 microFarad Surface-Mounted Capacitor](https://www.digikey.com/en/products/detail/yageo/CC0603KRX7R7BB104/302822)
 * C3, C4: [51 picoFarad Surface-Mounted Capacitor](https://www.digikey.com/en/products/detail/kemet/C0603C510J5GAC7867/2200925)
 ### Ordering more chips
-See [link](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/blob/main/capacitance/README-cap.md?plain=1) on how to order more chips.
+See [link](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/blob/main/capacitance/README-cap.md) on how to order more chips.
 ### ProtoCentral api
 Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCentral FDC1004 Capacitive Sensor Library" by ProtoCentral.
 [src](https://github.com/Protocentral/ProtoCentral_fdc1004_breakout/tree/master/src)
