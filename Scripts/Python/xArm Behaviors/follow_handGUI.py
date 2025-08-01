@@ -20,7 +20,7 @@ try:
 except:
     pass
 
-minThres = .8 # lowest value(%) where hand detected
+minThres = 1 # lowest value(%) where hand detected
 targetThres = 4 # thres value(%) when arm chases towards vs moves away from hand
 prevTime = time.time()
 currentTime = 0.1
