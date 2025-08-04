@@ -4,24 +4,37 @@ Date Created: 6/11/2025
 Last Updated: 6/30/2025
 
 Description:
-  This script is used to communicate between the Arduino and Python. This module must be imported in xArm behavior scripts. 
+  This script is used to communicate between the Arduino and Python. This module must be imported in xArm behavior scripts (gui handels import too). 
 
 """
 import serial
 import time
 
+FDC_SCALAR = 0x80000
+CAPDAC_SCALAR = 3.125
+
 class Sensor:
     def __init__(self, id):
-        self.id = id
-        self.value = 0 # in femtoFarads
-        self.loVal = 4400 
-        self.hiVal = 48000
+        self.id = id                # id int8 representation of [mux, port, channel]:(3,3,2 bits)
+        self.addr= id>>5
+        self.port= id>>2 & 0b111
+        self.channel = id & 0b11
+        self.value = 0              # in pF
+        self.loVal = 4.2 
+        self.hiVal = 40
         self.percent = 0
         self.isCalibrated = False
 
     def __str__(self):
         return f"Sensor(id={self.id}, value={self.value}, loVal={self.loVal}, hiVal={self.hiVal}, percent={self.percent}, isCalibrated={self.isCalibrated})"
     
+    def ConvertToPF(raw_value, capdac) -> float:
+        #Convert from raw measurement to picofarads
+        #Capacitance (pf) = (measurement [23:0]) / 2^19 ) + C_offset
+        C_offset = float(capdac) * float(CAPDAC_SCALAR)
+        capacitance_pF = (float(raw_value) / float(FDC_SCALAR)) + C_offset
+        return capacitance_pF
+
     def getPercent(self)->float:
         v = self.value
         scale = self.hiVal - self.loVal
@@ -107,7 +120,13 @@ def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
             if time.time() - timestamp > printDelay:
                 timestamp = time.time()
                 print(f"Error opening serial port. Check connection...")
-            
+
+def toSigned(value, bits):
+    if value >= 2**(bits - 1):
+        return value - 2**bits
+    else:
+        return value
+         
 def ReadPort() -> dict[int, Sensor]:
     """
     Reads from arduino and updates Sensor vals.
@@ -116,29 +135,35 @@ def ReadPort() -> dict[int, Sensor]:
 
     Format in bytes:
         0xAA 1b |      n 1b    {       id 1b     | Sensor data 2b } *n| tail 1b  
-        header  | sensor_count { mux | port | ch | int | fraction }...| tail
+        header  | sensor_count { mux | port | ch | value | capdac }...| tail
     """
     try:
-        time.sleep(.02)
         header = arduino.read(1)
         if header == b'':
             print("No data received.")
-            raise
+            return Sensors
         elif header == b'\xAA':
             payload_size = int.from_bytes(arduino.read(1), 'big')
             for i in range(payload_size):
                 data = arduino.read(3)
+                if len(data) != 3:
+                    print("Incomplete data received for sensor.")
+                    raise ValueError("Incomplete data")
                 id = data[0]
-                val = (data[1] << 8) | data[2]
-                if id not in Sensors:
-                    Sensors[id] = Sensor(id)
-                Sensors[id].Update(val)
+                val = (data[1]<<8 | data[2])/1000
 
-            tail = arduino.read(1) # bug!! tail not being read correctly
-            #print(f"Tail: {tail}") 
+                #capdac = data[3] & 0b1111
+
+                if i not in Sensors:
+                    Sensors[i] = Sensor(id)
+                Sensors[i].Update(val)
+
         return Sensors
-    except:
-        print("Error reading from serial port.")
+    except ValueError as ve:
+        print(f"ValueError: {ve}")
+        return Sensors
+    except serial.SerialException as se:
+        print(se)
         return Sensors
 
 """
@@ -166,8 +191,10 @@ if __name__ == "__main__":
             continue
 
         msg = ""
-        for s in Sensors.values():
+        for i,s in Sensors.items():
             if not s.isCalibrated:
-                s.Calibrate()
-            msg += f"{s.id}: {s.value}fF ({s.percent}%)\t"
-        print(msg)
+                #s.Calibrate()
+                pass
+            msg += f"{i}: {s.value:.2f}pF({s.percent}%) "
+        if msg:
+            print(msg)

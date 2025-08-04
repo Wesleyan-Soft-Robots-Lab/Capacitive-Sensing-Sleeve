@@ -21,8 +21,8 @@ Hardware Setup:
 #define TCAADDR1 0x70  // 1st link multiplexer
 #define TCAADDR2 0x71  // 2nd link multiplexer (currently unused)
 
-#define UPPER_BOUND 0x6ACFC0 //7mill
-#define LOWER_BOUND 0x3D0900 //4mill
+#define UPPER_BOUND 0x6ACFC0            //7mill
+#define LOWER_BOUND (-1 * UPPER_BOUND)  //0x16E360 //1mill
 #define CAPDAC_MAX (0x1F)
 #define FDC_SCALAR 0x80000
 #define CAPDAC_SCALAR 3.125
@@ -35,17 +35,17 @@ typedef enum {
   TWOB = 3
 } fdc1004_channel_t;
 
-class Sensor: public FDC1004 {
+class Sensor : public FDC1004 {
 public:
   uint8_t _mux = TCAADDR1;  //multiplexor port (0-1) fdc chip is connected to
   uint8_t _port;            //multiplexor port (0-7) fdc chip is connected to
 
-  float _channelValues[MAX_CHANNELS];  // 4 bytes
+  float _channelValues[MAX_CHANNELS];
   uint8_t _capdacValues[MAX_CHANNELS];
   bool _capdacAdjusted[MAX_CHANNELS];
 
   Sensor(uint8_t muxAddr = TCAADDR1, uint8_t port = 0)
-    :FDC1004(FDC1004_100HZ), _mux(muxAddr), _port(port) {
+    : FDC1004(FDC1004_100HZ), _mux(muxAddr), _port(port) {
     for (int i = 0; i <= FDC1004_CHANNEL_MAX; ++i) {
       _capdacValues[i] = 0;
       _capdacAdjusted[i] = false;
@@ -59,8 +59,8 @@ public:
     Wire.endTransmission();
   }
 
-  //Reads the sensor's values
-  void UpdateSensor() {
+  //Reads all 4 channels. updates _channelValues[]
+  void UpdateChannels() {
     SetBus();
 
     for (uint8_t channel = 0; channel < 4; channel++) {
@@ -70,90 +70,95 @@ public:
 
       uint16_t value[2];
       if (!readMeasurement(channel, value)) {
-        uint32_t raw_val = ((uint32_t)(uint16_t)value[0] << 8) | (value[1] >> 8);
-        //Serial.print((int16_t)value[0]);
-        Serial.print(raw_val);
-        Serial.print("  ");
-        if ((raw_val > (uint32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
+        int32_t raw_val = ((int32_t)(int16_t)value[0] << 8) | (value[1] >> 8);  // raw_val is signed 24bit; value[0] = signed; value[1] = unsigned
+
+        if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
           _capdacValues[channel] += 1;
           _capdacAdjusted[channel] = true;
-        }else if ((raw_val < (uint32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
+        } else if ((raw_val < (int32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
           _capdacValues[channel] -= 1;
           _capdacAdjusted[channel] = true;
         }
+
         _channelValues[channel] = ConvertToPF(raw_val, _capdacValues[channel]);
+        //_channelValues[channel] = (int16_t)value[0] << 8 | (value[1] >> 8);
       }
     }
   }
-  float ConvertToPF(int32_t raw_value, uint8_t capdac) const {
-    // Convert from raw measurement to picofarads 
+  float ConvertToPF(uint32_t raw_value, uint8_t capdac){
+    //Convert from raw measurement to picofarads
     //Capacitance (pf) = (measurement [23:0]) / 2^19 ) + C_offset
     float C_offset = (float)capdac * (float)CAPDAC_SCALAR;
-    float capacitance_pF = ((float)raw_value / (float)FDC_SCALAR) + C_offset;
+    float capacitance_pF = (float)raw_value / (float)FDC_SCALAR + C_offset;
     return capacitance_pF;
   }
 };
 
-/*************************
-      Define Sensors
-**************************/
-#define SENSOR_COUNT 2
+/****************************
+      Define FDC Sensors     
+*****************************/
+#define SENSOR_COUNT 1
 Sensor sensors[SENSOR_COUNT];
 
 void initSensors() {
   sensors[0] = Sensor(TCAADDR1, 7);
-  sensors[1] = Sensor(TCAADDR1, 4);
-  /* sensors[4] = Sensor(7, ONEA);
-  sensors[5] = Sensor(7, ONEB);
-  sensors[6] = Sensor(7, TWOA);
-  sensors[7] = Sensor(7, TWOB); */
+  //sensors[1] = Sensor(TCAADDR1, 4);
   return;
 }
 
 //Print capacitance in femtoFarads of each sensor
 void Debug() {
-  /* for (int i = 0; i < SENSOR_COUNT; i++) {
+  for (int i = 0; i < SENSOR_COUNT; i++) {
     if (i != 0) {
       Serial.print(";");
     }
-    for (int c=0; c<MAX_CHANNELS; c++)
-    {
-      Serial.print("sensor_" + (String)(i*4+c) + ",");
-      Serial.print(sensors[i]._capdacValues[c]);
+    for (int c = 0; c < MAX_CHANNELS; c++) {
+      Serial.print("sensor_" + (String)(i * 4 + c) + ",");
+      Serial.print(sensors[i]._channelValues[c], 3);
       Serial.print("  ");
     }
-  } */
+  }
   Serial.println();
   return;
 }
 
+
 void TransmitData() {
   /*
   Format in bytes:
-  |  0xAA  |      n       [      Sensor Data       ] *n| "\n" | 
-  | header | sensor_count | id | val_msb | val_lsb |...| tail |
+  |  0xAA  |      n       {       id        |   Sensor Data  } *n| "\n" | 
+  | header | sensor_count | mux | port | ch | capdac | value |...| tail |
 
-  TODO: add checksum
+  TODO: add checksum? more data from sensors: current capdac, capdac adjusted?
   */
-  /* int msgSize = 3 + SENSOR_COUNT * 3;
+  int dataSize = SENSOR_COUNT * MAX_CHANNELS * 3;
 
   byte header = 0xAA;
-  byte count = SENSOR_COUNT;
   byte tail = 0x11;
 
-  byte data[msgSize];
-  data[0] = header;
-  data[1] = count;
+  //header
+  Serial.write(header);
+  uint8_t count = SENSOR_COUNT * MAX_CHANNELS;
+  Serial.write(count);
   // Construct payload
+  byte data[dataSize];
   for (int i = 0; i < SENSOR_COUNT; i++) {
-    int n = 3 * i;
-    data[2 + n] = (byte)i;
-    uint16_t val = sensors[i].capacitance;
-    data[3 + n] = (val >> 8) & 0xFF;
-    data[4 + n] = (val)&0xFF;
+    for (int cha = 0; cha < MAX_CHANNELS; cha++) {
+      int n = i * MAX_CHANNELS * 3 + cha * 3;
+      //id
+      data[n] = sensors[i]._mux << 5 | sensors[i]._port << 2 | (uint8_t)cha;
+      uint16_t val = sensors[i]._channelValues[cha] * 1000;
+      // msb
+      data[1 + n] = val>>8;
+      // lsb
+      data[2 + n] = val;
+      // capdac
+      //data[3 + n] = (uint8_t)sensors[i]._capdacValues[cha]; // 3 bits of unused data (feel free to use)
+    }
   }
-  data[-1] = tail;
-  Serial.write(data, msgSize); */
+  Serial.write(data, dataSize);
+  // tail hopefully a checksum if not too cpu demanding
+  //Serial.write(tail);
   return;
 }
 
@@ -162,7 +167,7 @@ MAIN
 */
 
 void setup() {
-  Serial.begin(1000000);
+  Serial.begin(115200);
   Wire.begin();
   initSensors();
   while (!Serial)
@@ -171,8 +176,8 @@ void setup() {
 
 void loop() {
   for (int i = 0; i < SENSOR_COUNT; i++) {
-    sensors[i].UpdateSensor();
+    sensors[i].UpdateChannels();
   }
-  //TransmitData();
-  Debug();
+  TransmitData();
+  //Debug();
 }
