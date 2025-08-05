@@ -14,7 +14,7 @@ import pandas as pd
 import csv
 import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import communication as comm
+import Scripts.Python.outdated.communication as comm
 
 def DisplayData():
     #calculate std of each sensor

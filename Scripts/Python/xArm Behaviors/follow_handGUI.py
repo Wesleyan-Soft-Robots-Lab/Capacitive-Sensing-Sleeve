@@ -10,7 +10,7 @@ import sys
 import os
 import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import communication as comm
+import receiver as comm
 import gui
 from xarm.wrapper import XArmAPI
 

@@ -10,7 +10,7 @@ import os
 import time
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import communication as comm
+import Scripts.Python.outdated.communication as comm
 import gui
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..','xArm Behaviors')))
 

@@ -1,7 +1,7 @@
 """ 
 Name: Miles Modeste
 Date Created: 6/11/2025
-Last Updated: 6/30/2025
+Last Updated: 8/5/2025
 
 Description:
   This script is used to communicate between the Arduino and Python. This module must be imported in xArm behavior scripts (gui handels import too). 
@@ -28,15 +28,16 @@ class Sensor:
     def __str__(self):
         return f"Sensor(id={self.id}, value={self.value}, loVal={self.loVal}, hiVal={self.hiVal}, percent={self.percent}, isCalibrated={self.isCalibrated})"
     
-    def ConvertToPF(raw_value, capdac) -> float:
-        #Convert from raw measurement to picofarads
-        #Capacitance (pf) = (measurement [23:0]) / 2^19 ) + C_offset
+    def ConvertToPF(raw_value:int, capdac:int) -> float:
+        """ 
+        Converts raw measurement to picofarads using equation:
+            Capacitance (pf) = (measurement [23:0]) / 2^19 ) + C_offset
+        """
         C_offset = float(capdac) * float(CAPDAC_SCALAR)
         capacitance_pF = (float(raw_value) / float(FDC_SCALAR)) + C_offset
         return capacitance_pF
 
-    def getPercent(self)->float:
-        v = self.value
+    def getPercent(self, v:float)->float:
         scale = self.hiVal - self.loVal
         if (v==0 or scale==0):
             return 0.0
@@ -97,20 +98,15 @@ class Sensor:
         return
     
     def Update(self, value):
-        """ if not self.isCalibrated:
-            print(f"{self.id} is not calibrated yet.") """
         self.value = value
-        self.percent = self.getPercent()
-        #self.delta = self.getDelta()
-        
+        self.percent = self.getPercent(value)   
 
 """
 Methods 
 """
 def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
-    """
-    Open serial connection to arduino. Retries until successful.
-    """
+    """ Open serial connection to arduino. Retries until successful."""
+
     timestamp = time.time()
     printDelay = 5  # seconds
     while True:
@@ -122,20 +118,20 @@ def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
                 print(f"Error opening serial port. Check connection...")
 
 def toSigned(value, bits):
+    """ Converts an unsigned value to signed value based on bit length. """
     if value >= 2**(bits - 1):
         return value - 2**bits
     else:
         return value
          
 def ReadPort() -> dict[int, Sensor]:
-    """
+    """ 
     Reads from arduino and updates Sensor vals.
-
-    Returns: updated dict of Sensors
+        Returns: updated dict of Sensors
 
     Format in bytes:
-        0xAA 1b |      n 1b    {       id 1b     | Sensor data 2b } *n| tail 1b  
-        header  | sensor_count { mux | port | ch | value | capdac }...| tail
+        0xAA 1b |      n 1b    |       id 1b     | Sensor Val 3b  | *n 
+        header  | sensor_count | mux | port | ch | value | capdac | ...
     """
     try:
         header = arduino.read(1)
@@ -145,18 +141,22 @@ def ReadPort() -> dict[int, Sensor]:
         elif header == b'\xAA':
             payload_size = int.from_bytes(arduino.read(1), 'big')
             for i in range(payload_size):
-                data = arduino.read(3)
-                if len(data) != 3:
-                    print("Incomplete data received for sensor.")
-                    raise ValueError("Incomplete data")
+                data = arduino.read(5)
+                if len(data) < 5:
+                    raise ValueError("Incomplete data received.")
                 id = data[0]
-                val = (data[1]<<8 | data[2])/1000
-
-                #capdac = data[3] & 0b1111
+                raw_val = toSigned((data[1] << 16) | (data[2] << 8) | data[3], 24)
+                
+                capdac = data[4] & 0b1111
+                if capdac == 30:
+                    print(f"Sensor {id} capdac is 31...")
+                val = Sensor.ConvertToPF(raw_val, capdac)
 
                 if i not in Sensors:
-                    Sensors[i] = Sensor(id)
-                Sensors[i].Update(val)
+                    Sensors[id] = Sensor(id)
+                Sensors[id].Update(val)
+
+        time.sleep(.1) # may need to increase if data stream too slow
 
         return Sensors
     except ValueError as ve:
@@ -195,6 +195,6 @@ if __name__ == "__main__":
             if not s.isCalibrated:
                 #s.Calibrate()
                 pass
-            msg += f"{i}: {s.value:.2f}pF({s.percent}%) "
+            msg += f"{s.id}: {s.value:0.2f}pF  "
         if msg:
             print(msg)
