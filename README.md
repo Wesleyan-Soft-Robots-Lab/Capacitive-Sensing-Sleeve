@@ -7,17 +7,25 @@ It also consolidates relevant work done in:
 
 # Table of Contents
 * [Directory](#folder-directory)
-* [Hardware & Setup](#hardware--setup)
-    * [Python Libraries](#python-libraries)
-    * [Microcontroller](#arduino-mega-2560)
-    * [Soft Sensor](#soft-sensor)
-    * [FDC1004](#fdc1004)
-        * [Components](#components)
-        * [Order More](#ordering-more-chips)
-        * [ProtoCentral Api](#protocentral-api)
-    * [Multiplexor](#tca9548a-i2c-multiplexor)
-    * [Robot Arm](#xarm5)
-        * [Connecting to xArm](#connecting-to-xarm)
+* [Hardware](#hardware--setup)    
+   * [Microcontroller](#arduino-mega-2560)
+   * [FDC1004](#fdc1004)
+      * [Components](#components)
+      * [Order More](#ordering-more-chips)
+   * [Multiplexor](#pca9548a-i2c-multiplexor)
+   * [Robot Arm](#xarm6)
+      * [Connecting to xArm](#connecting-to-xarm)
+* [Construction](#construction)
+   * [Sensor Patch]
+   * [Shield]
+   * [Soldering FDC]
+   * [Sleeve]
+* [Software]
+   * [Arduino]
+      * [ProtoCentral Api](#protocentral-api)
+   * [Python Libraries](#python-libraries)
+      * [xArm SKD]
+   * [src guide]
 * [Helpful Information](#helpful-information)
 * [Credits](#credits)
 
@@ -69,9 +77,10 @@ Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCe
 [src](https://github.com/Protocentral/ProtoCentral_fdc1004_breakout/tree/master/src)
 ### [More Info (pdf)](https://www.ti.com/lit/ds/symlink/fdc1004.pdf?ts=1726805458775)
 
-## TCA9548A I2C Multiplexor
+## PCA9548A I2C Multiplexor
 + image
-+ link to more info
++ [buy](https://www.adafruit.com/product/5626)
++ [link to setting address pins](https://learn.adafruit.com/adafruit-pca9548-8-channel-stemma-qt-qwiic-i2c-multiplexer/pinouts)
 
 ## xArm6
 * [api](https://github.com/xArm-Developer/xArm-Python-SDK/blob/master/doc/api/xarm_api.md)
