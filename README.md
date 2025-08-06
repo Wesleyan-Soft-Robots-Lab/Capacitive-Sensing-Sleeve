@@ -5,7 +5,7 @@ It also consolidates relevant work done in:
 * [Katelyns repository](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/tree/main)
 * [Pattons repository](https://github.com/Wesleyan-Soft-Robots-Lab/proximity_sensing_test)
 
-# Table of Contents
+## Table of Contents
 * [Directory](#folder-directory)
 * [Hardware](#hardware--setup)    
    * [Microcontroller](#arduino-mega-2560)
@@ -29,7 +29,7 @@ It also consolidates relevant work done in:
 * [Helpful Information](#helpful-information)
 * [Credits](#credits)
 
-# Folder Directory
+## Folder Directory
 (subject to change)
 ```
 ├─ README.md                <-- You are Here
@@ -46,50 +46,50 @@ It also consolidates relevant work done in:
         |                                                 arm related. (eg arduino->python bit
         |                                                 communication, Sensor class methods)
 ```
-# Hardware & Setup
+## Hardware & Setup
 ## Python libraries
 pip install pyserial (arduino-python comm)
 pip install (xarm api??)
 
-## Arduino MEGA 2560
+### Arduino MEGA 2560
 + image
 + usb cable connection
 + link to circuit diagram/image i.e. inform to reader to use slot 20 and 21 for i2c comm
 + more information abt i2c communication
 To get the [FDC1004](#fdc1004) working you need to install [Protocentral api](#protocentral-api) to arduino
 
-## Soft Sensor
+### Soft Sensor
 + image
 + how to construct
 
-## FDC1004
+### FDC1004
 + image
 + katie has well documented readme about this
-### Components
+#### Components
 * R1, R2: [4.99k Ohm Surface-Mounted Resistor](https://www.digikey.com/en/products/detail/te-connectivity-passive-product/CPF0603F4K99C1/2384513)
 * C1: [1 microFarad Surface-Mounted Capacitor](https://www.digikey.com/en/products/detail/yageo/CC0603KRX7R7BB105/2833611)
 * C2: [.1 microFarad Surface-Mounted Capacitor](https://www.digikey.com/en/products/detail/yageo/CC0603KRX7R7BB104/302822)
 * C3, C4: [51 picoFarad Surface-Mounted Capacitor](https://www.digikey.com/en/products/detail/kemet/C0603C510J5GAC7867/2200925)
-### Ordering more chips
+#### Ordering more chips
 See [link](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/blob/main/capacitance/README-cap.md) on how to order more chips.
-### ProtoCentral api
+#### ProtoCentral api
 Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCentral FDC1004 Capacitive Sensor Library" by ProtoCentral.
 [src](https://github.com/Protocentral/ProtoCentral_fdc1004_breakout/tree/master/src)
-### [More Info (pdf)](https://www.ti.com/lit/ds/symlink/fdc1004.pdf?ts=1726805458775)
+#### [More Info (pdf)](https://www.ti.com/lit/ds/symlink/fdc1004.pdf?ts=1726805458775)
 
-## PCA9548A I2C Multiplexor
+### PCA9548A I2C Multiplexor
 + image
 + [buy](https://www.adafruit.com/product/5626)
 + [link to setting address pins](https://learn.adafruit.com/adafruit-pca9548-8-channel-stemma-qt-qwiic-i2c-multiplexer/pinouts)
 
-## xArm6
+### xArm6
 * [api](https://github.com/xArm-Developer/xArm-Python-SDK/blob/master/doc/api/xarm_api.md)
 * [User manual](https://www.ufactory.cc/wp-content/uploads/2023/05/xArm-User-Manual-V2.0.0.pdf)
-### <u> Connecting to xArm (Using the ufactory studio app)</u>:
+#### <u> Connecting to xArm (Using the ufactory studio app)</u>:
 1. Double check all cables are properly connected and "Emergency Stop" button is up. All leds should be lit (Flickering LAN leds are OK, it's working) There is a sticker with an IP address labeled **192.168.232** !Remember where to find this!
 2. Wait for 3 beeps after around 1 min. means the arm block server is ready to connect.
 3. Configure IP Address: (someone who hasn't connected to the arm b4, please confirm if step is necessary. I think you might only need to wait for the 3 beeps for the server to get ready).
-    #### Windows 11:
+    ##### Windows 11:
     1. Open your **Control Panel**
     2. Navigate to: <u>Network and Internet</u> > <u>Network and Sharing Center</u>
     3. On the lefthand side click **Change adapter settings**
@@ -98,7 +98,7 @@ Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCe
     6. Set IP: **192.168.1.x**; and Subnet Mask: **255.255.255.0** (x can be anything from 0-255. **! Do NOT choose same ip as sticker !**)
     7. Hit **OK** and **Close** to confirm settings
     
-    #### Mac:
+    ##### Mac:
     1. Connect the ethernet cable from the arm set up to your computer
     2. navigate to system settings --> Network --> Ethernet.
     3. Select **<u>USB 10/100/1000LAN</u>** --> click **details** --> **TCP/IP**, and set **<u>configure IPv4</u>** to **manually**
@@ -109,9 +109,9 @@ Easiest way is to open ArduinoIDE and in the library manager search for "ProtoCe
    3. click connect, and explore the options of arm control
    **NB MAC USERS :**The studio app may flag as unsafe and fail to open the first time. Go to system settings, scroll down and click privacy and security. Then scroll to the bottom and you will see the app listed as an unsafe app that tried to open, click allow anyway
 
-#### <u> Connecting to xArm (Python arm.py script)</u>:
+##### <u> Connecting to xArm (Python arm.py script)</u>:
 
-# Helpful Information
+## Helpful Information
 * [Measuring a Single Capcitor](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/blob/main/capacitance/README-cap.md?plain=1#additional-resources)
 * [xArm sdk](https://github.com/xArm-Developer/xArm-Python-SDK)
 # Credits
