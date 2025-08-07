@@ -10,7 +10,7 @@ import sys
 import os
 import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import communication as cm
+import receiver as re
 from xarm.wrapper import XArmAPI
 
 ip = '192.168.1.232'
@@ -55,9 +55,9 @@ class PIDController:
 
 def Init():
     global Sensors, Controllers
-    Sensors = dict[int, cm.Sensor]()
+    Sensors = dict[int, re.Sensor]()
     Controllers = dict[int, PIDController]()
-    [int, [cm.Sensor, PIDController, str]]
+    [int, [re.Sensor, PIDController, str]]
     Initialized = False
 
     arm.motion_enable(enable=True)
@@ -74,7 +74,7 @@ def Init():
 
     time.sleep(1)
     while not Initialized:
-        Sensors = cm.ReadPort()
+        Sensors = re.ReadPort()
         for idx in Sensors:
             if not Sensors[idx].isCalibrated:
                 Sensors[idx].Calibrate()
@@ -116,5 +116,5 @@ def followHand():
 if __name__ == "__main__":
     Init()
     while True:
-        Sensors = cm.ReadPort()
+        Sensors = re.ReadPort()
         followHand()

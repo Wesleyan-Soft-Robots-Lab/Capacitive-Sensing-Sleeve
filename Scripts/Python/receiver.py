@@ -1,31 +1,43 @@
 """ 
 Name: Miles Modeste
 Date Created: 6/11/2025
-Last Updated: 6/30/2025
+Last Updated: 8/5/2025
 
 Description:
-  This script is used to communicate between the Arduino and Python. This module must be imported in xArm behavior scripts. 
+  This script is used to communicate between the Arduino and Python. This module must be imported in xArm behavior scripts (gui handels import too). 
 
-TODO:
-    - Add speed check
 """
 import serial
 import time
 
+FDC_SCALAR = 0x80000
+CAPDAC_SCALAR = 3.125
+
 class Sensor:
     def __init__(self, id):
-        self.id = id
-        self.value = 0 # in femtoFarads
-        self.loVal = 11000 
-        self.hiVal = 30000
+        self.id = id                # id int8 representation of [mux, port, channel]:(3,3,2 bits)
+        self.addr= id>>5
+        self.port= id>>2 & 0b111
+        self.channel = id & 0b11
+        self.value = 0              # in pF
+        self.loVal = 4.2 
+        self.hiVal = 40
         self.percent = 0
         self.isCalibrated = False
 
     def __str__(self):
         return f"Sensor(id={self.id}, value={self.value}, loVal={self.loVal}, hiVal={self.hiVal}, percent={self.percent}, isCalibrated={self.isCalibrated})"
     
-    def getPercent(self)->float:
-        v = self.value
+    def ConvertToPF(raw_value:int, capdac:int) -> float:
+        """ 
+        Converts raw measurement to picofarads using equation:
+            Capacitance (pf) = (measurement [23:0]) / 2^19 ) + C_offset
+        """
+        C_offset = float(capdac) * float(CAPDAC_SCALAR)
+        capacitance_pF = (float(raw_value) / float(FDC_SCALAR)) + C_offset
+        return capacitance_pF
+
+    def getPercent(self, v:float)->float:
         scale = self.hiVal - self.loVal
         if (v==0 or scale==0):
             return 0.0
@@ -86,20 +98,15 @@ class Sensor:
         return
     
     def Update(self, value):
-        """ if not self.isCalibrated:
-            print(f"{self.id} is not calibrated yet.") """
         self.value = value
-        self.percent = self.getPercent()
-        #self.delta = self.getDelta()
-        
+        self.percent = self.getPercent(value)   
 
 """
 Methods 
 """
 def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
-    """
-    Open serial connection to arduino. Retries until successful.
-    """
+    """ Open serial connection to arduino. Retries until successful."""
+
     timestamp = time.time()
     printDelay = 5  # seconds
     while True:
@@ -109,52 +116,66 @@ def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
             if time.time() - timestamp > printDelay:
                 timestamp = time.time()
                 print(f"Error opening serial port. Check connection...")
-            
-def ReadPort() -> dict[int, Sensor]:
-    """
-    Reads from arduino and updates Sensor vals.
 
-    Returns: updated dict of Sensors
+def toSigned(value, bits):
+    """ Converts an unsigned value to signed value based on bit length. """
+    if value >= 2**(bits - 1):
+        return value - 2**bits
+    else:
+        return value
+         
+def ReadPort() -> dict[int, Sensor]:
+    """ 
+    Reads from arduino and updates Sensor vals.
+        Returns: updated dict of Sensors
 
     Format in bytes:
-
-        0xAA 1b|      n    1b |      Sensor Data    3b | *n  | "/n" 1b
-        header | sensor_count | id | val_msb | val_lsb | ... | tail 
+        0xAA 1b |      n 1b    |       id 1b     | Sensor Val 3b  | *n 
+        header  | sensor_count | mux | port | ch | value | capdac | ...
     """
     try:
-        time.sleep(.02)
         header = arduino.read(1)
         if header == b'':
-            print("No data received.")
-            raise
+            return Sensors
         elif header == b'\xAA':
             payload_size = int.from_bytes(arduino.read(1), 'big')
             for i in range(payload_size):
-                data = arduino.read(3)
+                data = arduino.read(5)
+                if len(data) < 5:
+                    raise ValueError("Incomplete data received.")
                 id = data[0]
-                val = (data[1] << 8) | data[2]
-                if id not in Sensors:
+                raw_val = toSigned((data[1] << 16) | (data[2] << 8) | data[3], 24)
+                
+                capdac = data[4] & 0b1111
+                if capdac == 30:
+                    print(f"Sensor {id} capdac is 31...")
+                val = Sensor.ConvertToPF(raw_val, capdac)
+
+                if i not in Sensors:
                     Sensors[id] = Sensor(id)
                 Sensors[id].Update(val)
 
-            tail = arduino.read(1) # bug!! tail not being read correctly
-            #print(f"Tail: {tail}") 
+        # this delay is proportional to the number of sensors connected. not sure by how much
+        # e.g. if only 4 patches no delay needed. 
+        #time.sleep(.1) 
         return Sensors
-    except:
-        print("Error reading from serial port.")
+    except ValueError as ve:
+        #print(f"ValueError: {ve}")
+        return Sensors
+    except serial.SerialException as se:
+        print(se)
         return Sensors
 
 """
 MAIN
 """
-
 def Start():
     global Sensors, arduino
 
     Sensors = dict[int, Sensor]()
 
     arduino = OpenConnection()
-    print("Serial port opened successfully.")      
+    print("Serial port opened successfully.")     
 
 Start()
 
@@ -168,10 +189,12 @@ if __name__ == "__main__":
             time.sleep(1)
             arduino = OpenConnection()
             continue
-        
+
         msg = ""
-        for s in Sensors.values():
+        for i,s in Sensors.items():
             if not s.isCalibrated:
-                s.Calibrate()
-            msg += f"{s.id}: {s.value}fF ({s.percent}%)\t"
-        print(msg)
+                #s.Calibrate()
+                pass
+            msg += f"{s.id}: {s.value:0.2f}pF  "
+        if msg:
+            print(msg)
