@@ -4,7 +4,7 @@ Date Created: 7/10/2025
 
 Description:
   This script shows a GUI for calibrating Sensors communicating between Arduino and Python.
-  This module is intended to be run instead of communication.py 
+  This module is intended to be run instead of receiver.py 
 
 TODO:
     - Add module to save/load calibration data
@@ -12,7 +12,7 @@ TODO:
 """
 import os
 import customtkinter as ct
-import communication as comm
+import receiver as re
 import pandas as pd
 import json
 import time
@@ -66,18 +66,18 @@ class ControlButtons(ct.CTkFrame):
     def __init__(self, master, attr):
         super().__init__(master)
         # - buttons
-        self.minus1_btn = ct.CTkButton(self, text="-10", fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -10))
+        self.minus1_btn = ct.CTkButton(self, text="-.1", fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -.1))
         self.minus1_btn.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-        self.minus10_btn = ct.CTkButton(self, text="-100",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -100))
+        self.minus10_btn = ct.CTkButton(self, text="-1",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -1))
         self.minus10_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        self.minus100_btn = ct.CTkButton(self, text="-1000",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -1000))
+        self.minus100_btn = ct.CTkButton(self, text="-10",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, -10))
         self.minus100_btn.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
         # + buttons
-        self.plus100_btn = ct.CTkButton(self, text="+1000",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 1000))
+        self.plus100_btn = ct.CTkButton(self, text="+10",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 10))
         self.plus100_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
-        self.plus10_btn = ct.CTkButton(self, text="+100",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 100))
+        self.plus10_btn = ct.CTkButton(self, text="+1",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 1))
         self.plus10_btn.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
-        self.plus1_btn = ct.CTkButton(self, text="+10",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, 10))
+        self.plus1_btn = ct.CTkButton(self, text="+.1",fg_color="gray30", width=0, corner_radius=6, command=lambda: self.ChangeVal(attr, .1))
         self.plus1_btn.grid(row=0, column=5, padx=5, pady=5, sticky="ew")
 
     def ChangeVal(self, attr, val):
@@ -121,7 +121,7 @@ class SensorDataModule(ct.CTkFrame):
         self.calibration_switch = ct.CTkSwitch(self, text="", command=self.toggle_calibration, variable=self.calib_switch_var, onvalue="on", offvalue="off")
         self.calibration_switch.grid(row=6, column=0, padx=10, pady=(10, 0), sticky="e")
     
-    def GetSelectedSensor(self):
+    def GetSelectedSensor(self) -> re.Sensor: 
         i = self.selectionFrame.variable.get()
         if (i == -1):
             return None
@@ -133,7 +133,7 @@ class SensorDataModule(ct.CTkFrame):
             return
         else:
             self.title.configure(text=f"Viewing Sensor_{self.selectedSensor.id} Data")
-            self.values.configure(text=f"Value: {self.selectedSensor.value}fF\nPercent: {self.selectedSensor.percent}%")
+            self.values.configure(text=f"Value: {self.selectedSensor.value:0.2f}pF\nPercent: {self.selectedSensor.percent:0.2f}%")
             self.hi_label.configure(text=f"High Point: {self.selectedSensor.hiVal}")
             self.lo_label.configure(text=f"Low Point: {self.selectedSensor.loVal}")
             self.calibrated_label.configure(text=f"is_Calibrated: {self.selectedSensor.isCalibrated}")
@@ -280,7 +280,7 @@ class GUI(ct.CTk):
         super().__init__()
         print("Launching GUI...")
         self.title("DEBUG Screen")
-        self.geometry("650x450")
+        self.geometry("650x700")
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
@@ -302,7 +302,7 @@ class GUI(ct.CTk):
         self.RefreshFrames()
 
     def RefreshFrames(self):
-        self.sensors = comm.ReadPort() 
+        self.sensors = re.ReadPort() 
         self.arm_behaviour_callback(self.sensors)
         self.data_frame.UpdateVals()
 
@@ -313,9 +313,9 @@ class GUI(ct.CTk):
 
 if __name__=="__main__":
     global sensors
-    sensors = dict[int,comm.Sensor]()
+    sensors = dict[int,re.Sensor]()
     while not sensors:
-        sensors = comm.ReadPort()
+        sensors = re.ReadPort()
         continue
     sensorGUI = GUI(sensorDict=sensors)
     sensorGUI.mainloop()

@@ -136,7 +136,6 @@ def ReadPort() -> dict[int, Sensor]:
     try:
         header = arduino.read(1)
         if header == b'':
-            print("No data received.")
             return Sensors
         elif header == b'\xAA':
             payload_size = int.from_bytes(arduino.read(1), 'big')
@@ -156,11 +155,12 @@ def ReadPort() -> dict[int, Sensor]:
                     Sensors[id] = Sensor(id)
                 Sensors[id].Update(val)
 
-        time.sleep(.1) # may need to increase if data stream too slow
-
+        # this delay is proportional to the number of sensors connected. not sure by how much
+        # e.g. if only 4 patches no delay needed. 
+        #time.sleep(.1) 
         return Sensors
     except ValueError as ve:
-        print(f"ValueError: {ve}")
+        #print(f"ValueError: {ve}")
         return Sensors
     except serial.SerialException as se:
         print(se)

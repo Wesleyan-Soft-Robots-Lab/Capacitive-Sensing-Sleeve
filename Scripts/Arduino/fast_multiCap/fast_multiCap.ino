@@ -13,15 +13,23 @@ Hardware Setup:
   *Assumes each FDC has all four channels connected
 
 How To Use:
-  1. Redefine SENSOR_COUNT
-  2. In initSensors(), Add sensor to sensors array with mux address and mux port.
+  1. Specify FDC_COUNT
+  2. In initialize(), Create multiplexor and sensor objects, adding sensors to array with corresponding multiplexor pointer and connecting port.
 */
 
 #include <Wire.h>
 #include <Protocentral_FDC1004.h>
 
-#define ADDR1 0x70  // 1st link multiplexer
-#define ADDR2 0x71  // 2nd link multiplexer
+/* 
+a0  a1  a2
+0   0   0   = 0x70
+1   0   0   = 0x71
+0   1   0   = 0x72
+1   1   0   = 0x73
+*/
+#define ADDR1 0x72  // 1st link multiplexer
+#define ADDR2 0x71
+#define ADDR3 0x70
 
 #define UPPER_BOUND 0x6ACFC0  //7mill   possible bug might need to adjust
 #define LOWER_BOUND (-1 * UPPER_BOUND)
@@ -30,16 +38,46 @@ How To Use:
 #define CAPDAC_SCALAR 3.125 */
 static const uint8_t MAX_CHANNELS = 4;
 
+class Multiplexor {
+public:
+  uint8_t _addr;
+  Multiplexor* _prev;
+  uint8_t _connectingPort;  // port on previous mux this mux is connected to
+
+  Multiplexor(uint8_t name, Multiplexor* previous = nullptr, uint8_t connectingPort = 0)
+    : _addr(name), _prev(previous), _connectingPort(connectingPort) {}
+};
+
+// set correct i2c wire based on chain
+void ChangeWire(Multiplexor* mux, uint8_t port) {
+  if (mux->_prev != nullptr) {
+    ChangeWire(mux->_prev, mux->_connectingPort);
+  }
+
+  /* DEBUG
+  Serial.print("ChangeWire on addr 0x");
+  Serial.print(mux->_addr, HEX);
+  Serial.print(" port ");
+  Serial.println(port); */
+  
+  Wire.beginTransmission(mux->_addr);
+  Wire.write(1 << port);
+  Wire.endTransmission();
+}
+
+/* 
+FDC sensor object
+ */
 class Sensor : public FDC1004 {
 public:
-  uint8_t _mux = ADDR1;  // multiplexor address. see doc on how to set
-  uint8_t _port;         // multiplexor port (0-7) FDC is connected to
+  Multiplexor* _mux;  // pointer to multiplexor
+  uint8_t _port;      // multiplexor port (0-7) FDC is connected to
 
   int32_t _channelValues[MAX_CHANNELS];  // raw FDC units. see ConvertToPF() for equation
   uint8_t _capdacValues[MAX_CHANNELS];
   bool _capdacAdjusted[MAX_CHANNELS];  // not used
 
-  Sensor(uint8_t muxAddr = ADDR1, uint8_t port = 0)
+  Sensor(Multiplexor* muxAddr = nullptr, uint8_t port = 0)
     : FDC1004(FDC1004_100HZ), _mux(muxAddr), _port(port) {
     for (int i = 0; i <= FDC1004_CHANNEL_MAX; ++i) {
       _capdacValues[i] = 0;
@@ -47,21 +85,14 @@ public:
     }
   }
 
-  // Switch I2C wire to self
-  void SetBus() {
-    Wire.beginTransmission(_mux);
-    Wire.write(1 << _port);
-    Wire.endTransmission();
-  }
-
   //Reads all 4 channels. updates _channelValues[]
   void UpdateChannels() {
-    SetBus();
+    ChangeWire(_mux, _port);
 
-    for (uint8_t channel = 0; channel < 4; channel++) {
+    for (uint8_t channel = 0; channel < MAX_CHANNELS; channel++) {
       configureMeasurementSingle(channel, channel, _capdacValues[channel]);
-      triggerSingleMeasurement(channel, FDC1004_100HZ);  // check Protocentral_FDC1004.cpp for delay associated with rate (e.g 100HZ -> 11)
-      delay(11);
+      triggerSingleMeasurement(channel, FDC1004_400HZ);  // check Protocentral_FDC1004.cpp for delay associated with rate (e.g 100HZ -> 11)
+      delay(3);
 
       uint16_t value[2];  // first element is signed int16_t. second element is unsigned and last 8bits are all 0
       if (!readMeasurement(channel, value)) {
@@ -89,22 +120,29 @@ public:
 };
 
 //==================================
-//=       Define FDC Sensors
+//=       Define FDC Sensors, Multiplexors
 //==================================
 
-#define SENSOR_COUNT 3
-Sensor sensors[SENSOR_COUNT];
+#define FDC_COUNT 3
+#define MUX_COUNT 3
+Sensor sensors[FDC_COUNT];
+Multiplexor* mux[MUX_COUNT];
 
-void initSensors() {
-  sensors[0] = Sensor(ADDR1, 7);
-  sensors[1] = Sensor(ADDR1, 4);
-  sensors[2] = Sensor(ADDR1, 5);
+void initialize() {
+  //store addresses in heap
+  mux[0] = new Multiplexor(ADDR1);
+  mux[1] = new Multiplexor(ADDR2, mux[0], 3);
+  mux[2] = new Multiplexor(ADDR3, mux[1], 4);
+
+  sensors[0] = Sensor(mux[2], 7);
+  sensors[1] = Sensor(mux[2], 3);
+  sensors[2] = Sensor(mux[0], 2);
   return;
 }
 
 //needs tweaking
 void Debug() {
-  for (int i = 0; i < SENSOR_COUNT; i++) {
+  for (int i = 0; i < FDC_COUNT; i++) {
     if (i != 0) {
       Serial.print(";");
     }
@@ -132,16 +170,16 @@ void TransmitData() {
   byte header = 0xAA;
   Serial.write(header);
   //count
-  uint8_t count = SENSOR_COUNT * MAX_CHANNELS;
+  uint8_t count = FDC_COUNT * MAX_CHANNELS;
   Serial.write(count);
   // Construct payload
-  int dataSize = SENSOR_COUNT * MAX_CHANNELS * 5;
+  int dataSize = FDC_COUNT * MAX_CHANNELS * 5;
   byte data[dataSize];
-  for (int i = 0; i < SENSOR_COUNT; i++) {
+  for (int i = 0; i < FDC_COUNT; i++) {
     for (int cha = 0; cha < MAX_CHANNELS; cha++) {
       int n = i * MAX_CHANNELS * 5 + cha * 5;
       //id
-      data[n] = sensors[i]._mux << 5 | sensors[i]._port << 2 | (uint8_t)cha;
+      data[n] = sensors[i]._mux->_addr << 5 | sensors[i]._port << 2 | (uint8_t)cha;
       //value
       int32_t val = sensors[i]._channelValues[cha];
       data[1 + n] = (val >> 16) & 0xFF;
@@ -162,15 +200,15 @@ MAIN
 void setup() {
   Serial.begin(115200);
   Wire.begin();
-  initSensors();
+  initialize();
   while (!Serial)
     ;
 }
 
 void loop() {
-  for (int i = 0; i < SENSOR_COUNT; i++) {
+  for (int i = 0; i < FDC_COUNT; i++) {
     sensors[i].UpdateChannels();
   }
   TransmitData();
-  //Debug();        //cant use Transmit and Debug at the same time
+  //Debug();  //cant use Transmit and Debug at the same time
 }
