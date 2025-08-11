@@ -123,7 +123,7 @@ public:
 //=       Define FDC Sensors, Multiplexors
 //==================================
 
-#define FDC_COUNT 3
+#define FDC_COUNT 10
 #define MUX_COUNT 3
 Sensor sensors[FDC_COUNT];
 Multiplexor* mux[MUX_COUNT];
@@ -137,6 +137,14 @@ void initialize() {
   sensors[0] = Sensor(mux[2], 7);
   sensors[1] = Sensor(mux[2], 3);
   sensors[2] = Sensor(mux[0], 2);
+
+  sensors[3] = Sensor(mux[0], 4);
+  sensors[4] = Sensor(mux[1], 0);
+  sensors[5] = Sensor(mux[1], 1);
+  sensors[6] = Sensor(mux[1], 6);
+  sensors[7] = Sensor(mux[1], 7);
+  sensors[8] = Sensor(mux[2], 0);
+  sensors[9] = Sensor(mux[2], 4);
   return;
 }
 
@@ -200,6 +208,7 @@ MAIN
 void setup() {
   Serial.begin(115200);
   Wire.begin();
+  Wire.setClock(400000);
   initialize();
   while (!Serial)
     ;

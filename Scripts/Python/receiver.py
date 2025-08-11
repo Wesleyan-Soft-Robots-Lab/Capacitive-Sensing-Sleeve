@@ -10,6 +10,7 @@ Description:
 import serial
 import time
 
+COM = "COM3"
 FDC_SCALAR = 0x80000
 CAPDAC_SCALAR = 3.125
 
@@ -104,7 +105,7 @@ class Sensor:
 """
 Methods 
 """
-def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
+def OpenConnection(port=COM, baudrate=115200, timeout=.1)-> serial.Serial:
     """ Open serial connection to arduino. Retries until successful."""
 
     timestamp = time.time()
@@ -152,8 +153,8 @@ def ReadPort() -> dict[int, Sensor]:
                 val = Sensor.ConvertToPF(raw_val, capdac)
 
                 if i not in Sensors:
-                    Sensors[id] = Sensor(id)
-                Sensors[id].Update(val)
+                    Sensors[i] = Sensor(id)
+                Sensors[i].Update(val)
 
         # this delay is proportional to the number of sensors connected. not sure by how much
         # e.g. if only 4 patches no delay needed. 
@@ -195,6 +196,6 @@ if __name__ == "__main__":
             if not s.isCalibrated:
                 #s.Calibrate()
                 pass
-            msg += f"{s.id}: {s.value:0.2f}pF  "
+            msg += f"{i}: {s.value:0.2f}pF  "
         if msg:
             print(msg)
