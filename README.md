@@ -1,5 +1,5 @@
 # Capacitive-Sensing-Sleeve
-This repository contains documentation and up-to-date arduino and python scripts to control the xArm via capacitive sensors.
+This repository contains documentation, fabrication guides, and arduino and python scripts to control the xArm using the sensors sleeve.
 
 It also consolidates relevant work done in:
 * [Katelyns repository](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/tree/main)
@@ -9,7 +9,8 @@ It also consolidates relevant work done in:
 * [Directory](#folder-directory)
 * [Hardware Components](#hardware)  
    * [Capacitive Sensor](#capacitive-sensor)
-      * [How to Create](#learn-how-to-create-your-own-patch-here)
+      * [How to Create Patch](#learn-how-to-create-your-own-patch-here)
+      * [How to Knit Shield](#learn-how-to-knit-your-own-shield-here)
    * [Microcontroller](#arduino-mega-2560)
    * [FDC1004](#fdc1004)
       * [How to Solder More](#soldering-more-chips)
@@ -21,6 +22,9 @@ It also consolidates relevant work done in:
       * [First-time Setup](#connecting-to-xarm-first-time)
 * [Setting Up Hardware](#hardware-setup)
 * [Software Guide](#software-guide)
+   * [Libraries](#libraries)
+   * [Custom Hardware Setup](#custom-hardware-setup)
+   * [Writing New Scripts](#writing-new-scripts)
 * [Improve Project](#expanding-the-project)
 * [Helpful Information](#helpful-information)
 * [Credits](#credits)
@@ -55,7 +59,7 @@ It also consolidates relevant work done in:
 |       ├───calibration_config.json                         # .json saves settings for  
 |       |                                                      sensor calibration 
 |       ├───gui.py                                          # runs receiver.py but with GUI
-|       └───receiver.py                                     # barebones .py to read arduino xmit
+|       └───fast_communication.py                           # barebones .py to read from arduino
 └───tests/                                                  # folder for test data, and videos
     ├───data/
     │   ├───off-arm_data/...
@@ -69,9 +73,10 @@ It also consolidates relevant work done in:
 
 Our sensors are simple, cheap, easy to create, elastic tubes stuffed with a conductive material and knitted into whatever shape is required. The result is a squishy, tactile patch that behaves like a capacitor and is ideal for pacifying hard surfaces and edges.
 
-The patches are the main focal point of this research project. If you are looking to expand or improve, this is a great area to explore, experiment, and break things ;)
+The patches are the main focal point of this research project. If you are looking to expand or improve, this is a great area to explore, experiment, and break things
 
 #### Learn how to create your own patch [here](doc/creating-capacitive-patch.md)
+#### Learn how to knit your own shield [here](doc/knit-shield.md)
 ### Arduino MEGA 2560
 <img src="doc/images/hardware/arduino-mega.jpg" alt="arduino-mega-2560" width="500px"/>
 
@@ -157,18 +162,79 @@ The use of Qwiic connect cables eliminate the need to solder.
    **NB MAC USERS :** The studio app may flag as unsafe and fail to open the first time. Go to system settings, scroll down and click privacy and security. Then scroll to the bottom and you will see the app listed as an unsafe app that tried to open, click allow anyway
 
 ## Hardware Setup
-1. Follow diagram for connecting wires: insert diagram
-2. if you want to change the address pins for more obvious code when daisy-chaining multiplexors see [link](https://learn.adafruit.com/adafruit-pca9548-8-channel-stemma-qt-qwiic-i2c-multiplexer/pinouts#address-pins-3129199) about soldering address pins
+Follow diagram below:
+
+<img src="doc/images/diagram.svg" alt="circuit layout" width="500px"/>
+
+*the arduino has two sets of I2C pinouts, but they are connected.
+
+Though it's not required, it maybe helpful to assign addresses to the multiplexors. see ([link](https://learn.adafruit.com/adafruit-pca9548-8-channel-stemma-qt-qwiic-i2c-multiplexer/pinouts#address-pins-3129199)) on how to do that.
+
+See [code](#custom-hardware-setup) for this diagram
+
 ## Software Guide
 The Scripts folder is sorted into arduino code and python code. For the arduino, the only two significant scripts are [multiCap.ino](Scripts/Arduino/multiCap/multiCap.ino) and [fast_multiCap.ino](Scripts/Arduino/fast_multiCap/fast_multiCap.ino). 
 
-For running the newer python scripts the arduino uses [fast_multiCap.ino](Scripts/Arduino/fast_multiCap/fast_multiCap.ino)
-For arduino libraries you must use Protocentrals fdc1004
+For running the newer python scripts (e.g GUI.py, follow_handGUI.py) the arduino uses [fast_multiCap.ino](Scripts/Arduino/fast_multiCap/fast_multiCap.ino).
+
+### Libraries
+- For Arduino, we use the [Prococentral FDC1004 c++ library](https://github.com/Protocentral/ProtoCentral_fdc1004_breakout) **v1.0.2**
+   - In ArduinoIDE library manager you can select the correct version.
+- For Python:
+   - pyserial - used to communicate with the arduino (pre-installed?)
+   - [xArm sdk](https://github.com/xArm-Developer/xArm-Python-SDK?tab=readme-ov-file#installation) - used to control to the xArm.
+   - [customtkinter](https://github.com/tomschimansky/customtkinter?tab=readme-ov-file#installation) - used to display graphical user interface
+
+### Custom Hardware Setup 
+
+This section is about changing **fast_multiCap.ino** to fit your hardware needs. Scroll down to the "Define sensors" section.
+```
+//=======================================
+//=   Define FDC Sensors, Multiplexors
+//=======================================
+
+#define FDC_COUNT 3
+#define MUX_COUNT 2
+Sensor sensors[FDC_COUNT];
+Multiplexor* mux[MUX_COUNT];
+
+void initialize() {
+  mux[0] = new Multiplexor(ADDR1);
+  mux[1] = new Multiplexor(ADDR2, mux[0], 4);
+
+  sensors[0] = Sensor(mux[0], 7, 0b0010);
+  sensors[1] = Sensor(mux[1], 0);
+  sensors[2] = Sensor(mux[1], 3);
+  return;
+}
+```
+this code reflects the diagram [above](#hardware-setup)
+- **FDC_COUNT** : sets the total number of fdc chips in your setup.
+- **MUX_COUNT** : sets the total number of pca multiplexors in you setup. (minimum 1)
+- **mux** : stores the multiplexor object locations in heap.
+   - The multiplexors are defined as linked lists where the root mux-- closest to the arduino-- points to null, and every new mux points to its predecessor via the predecessors port. This means that you can create a singular chain of mux's or create a tree of mux's all leading back to the root mux.
+- **sensors** : stores the fdc objects
+   - the sensors are defined by the multiplexor they are attached to and via which port
+   - an additional bitmask arguement can be given to turn on/off specific channels on the FDC chips (by default, all on -> 0b1111). The order is TWOB,TWOA, ONEB, ONEA. My hope is that this speeds up runtime and can be used by the python script to optimize which channels get read.
+
+After uploading to Arduino Mega. run fast_communication.py which should work automatically. If you would like to see a gui run gui.py. 
+### Writing New Scripts
+My recommendation for writing new python scripts is to include this block in some variation.
+```
+import fast_communication.py as comm
+
+sensors = dict[int,comm.Sensor]()
+while not sensors:
+   sensors = comm.ReadPort()
+   continue
+```
+
 ## Expanding the Project
 Various task, suggestions, and experiments have been listed in the [Issues](https://github.com/Wesleyan-Soft-Robots-Lab/Capacitive-Sensing-Sleeve/issues) tab in the repository. It would be greatly appreciated to maintain this workflow for progress tracking and overall project management. Feel free to raise your own issues and create more labels!!
-## Helpful Information
+## Helpful Links
 * [Measuring a Single Capcitor](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/blob/main/capacitance/README-cap.md?plain=1#additional-resources)
-* [xArm sdk](https://github.com/xArm-Developer/xArm-Python-SDK)
+* [xArm methods](https://github.com/xArm-Developer/xArm-Python-SDK/blob/master/doc/api/xarm_api.md)
+* [new Protocentral version](https://github.com/Protocentral/ProtoCentral_fdc1004_breakout/tree/master/src) (not working. ik why, but don't have time to fix it)
 ## Credits
 - EmPRISE lab at Cornell Univerisity
 - Sonia Roberts
