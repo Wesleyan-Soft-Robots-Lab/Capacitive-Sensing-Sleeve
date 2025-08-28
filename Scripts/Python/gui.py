@@ -12,7 +12,7 @@ TODO:
 """
 import os
 import customtkinter as ct
-import receiver as re
+import Scripts.Python.fast_communication as comm
 import pandas as pd
 import json
 import time
@@ -121,7 +121,7 @@ class SensorDataModule(ct.CTkFrame):
         self.calibration_switch = ct.CTkSwitch(self, text="", command=self.toggle_calibration, variable=self.calib_switch_var, onvalue="on", offvalue="off")
         self.calibration_switch.grid(row=6, column=0, padx=10, pady=(10, 0), sticky="e")
     
-    def GetSelectedSensor(self) -> re.Sensor: 
+    def GetSelectedSensor(self) -> comm.Sensor: 
         i = self.selectionFrame.variable.get()
         if (i == -1):
             return None
@@ -302,7 +302,7 @@ class GUI(ct.CTk):
         self.RefreshFrames()
 
     def RefreshFrames(self):
-        self.sensors = re.ReadPort() 
+        self.sensors = comm.ReadPort() 
         self.arm_behaviour_callback(self.sensors)
         self.data_frame.UpdateVals()
 
@@ -313,9 +313,9 @@ class GUI(ct.CTk):
 
 if __name__=="__main__":
     global sensors
-    sensors = dict[int,re.Sensor]()
+    sensors = dict[int,comm.Sensor]()
     while not sensors:
-        sensors = re.ReadPort()
+        sensors = comm.ReadPort()
         continue
     sensorGUI = GUI(sensorDict=sensors)
     sensorGUI.mainloop()

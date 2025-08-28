@@ -10,7 +10,7 @@ import sys
 import os
 import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import receiver as re
+import Scripts.Python.fast_communication as comm
 import gui
 from xarm.wrapper import XArmAPI
 
@@ -64,7 +64,7 @@ class PIDController:
 
 def Init():
     global Sensors, Controllers, arm
-    Sensors = dict[int, re.Sensor]()
+    Sensors = dict[int, comm.Sensor]()
     Controllers = dict[int, PIDController]()
 
     arm.motion_enable(enable=True)
@@ -78,7 +78,7 @@ def Init():
     #arm.motion_enable(enable=False)
 
     while not Sensors:
-        Sensors = re.ReadPort()
+        Sensors = comm.ReadPort()
 
     for s in Sensors.values():
         Controllers[s.id] = PIDController(Kp=6, Ki=.8, Kd=1.2, target=targetThres)
@@ -93,7 +93,7 @@ def ToggleLock():
         arm.motion_enable(enable=False)
     return
 
-def followHand(sensors:dict[int,re.Sensor]):
+def followHand(sensors:dict[int,comm.Sensor]):
     vectors = {
         "x":0,
         "y":0,

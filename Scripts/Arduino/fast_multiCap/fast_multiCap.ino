@@ -13,10 +13,10 @@ Hardware Setup:
   *Assumes each FDC has all four channels connected
 
 How To Use:
-  1. Specify FDC_COUNT
+  1. Specify FDC_COUNT, MUX_COUNT
   2. In initialize(), Create multiplexor and sensor objects, adding sensors to array with corresponding multiplexor pointer and connecting port.
 
-  BITMASK ORDER {TWOB,TWOA, ONEB,ONEA}
+  BITMASK ORDER {TWOB, TWOA, ONEB, ONEA}
 */
 
 #include <Wire.h>
@@ -46,17 +46,21 @@ public:
   Multiplexor* _prev;
   uint8_t _connectingPort;  // port on previous mux this mux is connected to
 
+  /* 
+  name : address associated with the a-pins on the back of the multiplexor.
+  previous : address location of the previous multiplexor object (not the a-pins). leave blank if its the root.
+  connectingPort : the channel on the previous multiplexor that THIS multiplexor is connected by. leave blank if root.
+  */
   Multiplexor(uint8_t name, Multiplexor* previous = nullptr, uint8_t connectingPort = 0)
     : _addr(name), _prev(previous), _connectingPort(connectingPort) {}
 };
 
-// set correct i2c wire based on chain
+// sets correct i2c wire based on chain
 void ChangeWire(Multiplexor* mux, uint8_t port) {
   if (mux->_prev != nullptr) {
     ChangeWire(mux->_prev, mux->_connectingPort);
   }
-
-  /* DEBUG
+  /* DEBUG uncomment to print to serial
   Serial.print("ChangeWire on addr 0x");
   Serial.print(mux->_addr, HEX);
   Serial.print(" port ");
@@ -72,7 +76,7 @@ FDC sensor object
  */
 class Sensor : public FDC1004 {
 public:
-  Multiplexor* _mux;  // pointer to multiplexor
+  Multiplexor* _mux;  // pointer to multiplexor object
   uint8_t _port;      // multiplexor port (0-7) FDC is connected to
 
   bool _activeChannels[MAX_CHANNELS];
@@ -96,14 +100,16 @@ public:
     for (uint8_t channel = 0; channel < MAX_CHANNELS; channel++) {
       if (_activeChannels[channel] == false) continue;  // skip inactive channels
       else {
-        configureMeasurementSingle(channel, channel, _capdacValues[channel]);
-        triggerSingleMeasurement(channel, FDC1004_400HZ);  // check Protocentral_FDC1004.cpp for delay associated with rate (e.g 100HZ -> 11)
+        configureMeasurementSingle(channel, channel, _capdacValues[channel]); // configure FDC chip to read from channel, using capdac
+        triggerSingleMeasurement(channel, FDC1004_400HZ);  //trigger FDC to start measuring
+        // check Protocentral_FDC1004.cpp for delay associated with rate (e.g 100HZ -> 11)
         delay(3);
 
         uint16_t value[2];  // first element is signed int16_t. second element is unsigned and last 8bits are all 0
-        if (!readMeasurement(channel, value)) {
+        if (!readMeasurement(channel, value)) { //read measurement automatically updates value[2]
           int32_t raw_val = ((int32_t)(int16_t)value[0] << 8) | (value[1] >> 8);  // hence, raw_val is signed 24bits
 
+          // adjust capdac to keep raw_val within UPPER/LOWER bound, 0<=capdac<=31 
           if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
             _capdacValues[channel] += 1;
             _capdacAdjusted[channel] = true;
@@ -117,7 +123,7 @@ public:
     }
   }
   /*
-  float ConvertToPF(uint32_t raw_value, uint8_t capdac) {                  ** this equation is now done in python (left it here for curious ppo)
+  float ConvertToPF(uint32_t raw_value, uint8_t capdac) {                  ** this equation is now done in python (left it here to avoid searching for it)
     //Convert from raw measurement to picofarads
     //Capacitance (pf) = (measurement [23:0]) / 2^19 ) + C_offset
     float C_offset = (float)capdac * (float)CAPDAC_SCALAR;
@@ -127,9 +133,9 @@ public:
   */
 };
 
-//==================================
-//=       Define FDC Sensors, Multiplexors
-//==================================
+//=======================================
+//=   Define FDC Sensors, Multiplexors
+//=======================================
 
 #define FDC_COUNT 1  //10
 #define MUX_COUNT 1  //3
@@ -159,7 +165,10 @@ void initialize() {
   return;
 }
 
-//needs tweaking
+/*
+Prints the channelValues in the serial monitor.
+cannot work if TransmitData() is also running
+*/
 void Debug() {
   for (int i = 0; i < FDC_COUNT; i++) {
     if (i != 0) {
@@ -175,23 +184,23 @@ void Debug() {
   return;
 }
 
+/*
+Creates and sends binary message of every sensors: index/id, raw value, capdac used
 
+Format in bytes:
+|  0xAA  |      n       {       id        |   Sensor Data  } *n|
+| header | sensor_count | mux | port | ch | value | capdac |...|
+
+TODO: add checksum? more data from sensors: capdac adjusted? is sensor active?
+*/
 void TransmitData() {
-  /*
-  Format in bytes:
-  |  0xAA  |      n       {       id        |   Sensor Data  } *n|
-  | header | sensor_count | mux | port | ch | value | capdac |...|
-
-  TODO: add checksum? more data from sensors: capdac adjusted? is sensor active?
-  */
-
   //header
   byte header = 0xAA;
   Serial.write(header);
   //count
   uint8_t count = FDC_COUNT * MAX_CHANNELS;
   Serial.write(count);
-  // Construct payload
+  // Constructs the payload
   int dataSize = FDC_COUNT * MAX_CHANNELS * 5;
   byte data[dataSize];
   for (int i = 0; i < FDC_COUNT; i++) {
@@ -212,7 +221,7 @@ void TransmitData() {
   return;
 }
 
-//TODO: recieve specific code from python to change active channels on a particular sensor
+//TODO: recieve specific keycode from python to change active channels on a particular sensor
 void ReceiveData() {
   byte data = Serial.read();
   uint8_t code = (data & 0b11110000)>> 4;
@@ -222,6 +231,7 @@ void ReceiveData() {
   } */
 
 }
+
 /*
 MAIN
 */
