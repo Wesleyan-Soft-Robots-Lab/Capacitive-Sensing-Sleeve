@@ -161,7 +161,7 @@ MAIN
 */
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(1000000);
   Wire.begin();
   initSensors();
   while (!Serial);
@@ -171,6 +171,6 @@ void loop() {
   for (int i = 0; i < SENSOR_COUNT; i++) {
     sensors[i].UpdateSensor();
   }
-  TransmitData();
-  //Debug();
+  //TransmitData();
+  Debug();
 }
