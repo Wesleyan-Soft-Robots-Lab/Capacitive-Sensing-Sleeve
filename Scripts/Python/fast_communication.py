@@ -143,13 +143,13 @@ def ReadPort() -> dict[int, Sensor]:
         header  | sensor_count | mux | port | ch | value | capdac | ...
     """
     try:
-        header = arduino.read(1)
+        header = arduino.read(size=1)
         if header == b'':
             return Sensors
         elif header == b'\xAA':
-            payload_size = int.from_bytes(arduino.read(1), 'big')
+            payload_size = int.from_bytes(arduino.read(size=1), 'big')
             for i in range(payload_size):
-                data = arduino.read(5)
+                data = arduino.read(size=5)
                 if len(data) < 5:
                     raise ValueError("Incomplete data received.")
                 id = data[0]
