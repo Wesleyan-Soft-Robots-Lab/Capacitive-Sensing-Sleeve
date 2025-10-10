@@ -10,9 +10,9 @@ Description:
 import serial
 import time
 
-COM = "COM3"
+COM = "/dev/cu.usbmodem1101" 
 FDC_SCALAR = 0x80000
-CAPDAC_SCALAR = 3.125
+CAPDAC_SCALAR = 3.125 # what is this scalar?
 
 class Sensor:
     def __init__(self, id):
@@ -112,7 +112,7 @@ def ConvertToPF(raw_value:int, capdac:int) -> float:
     capacitance_pF = (float(raw_value) / float(FDC_SCALAR)) + C_offset
     return capacitance_pF
 
-def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
+def OpenConnection(port='/dev/cu.usbmodem1101', baudrate=115200, timeout=.1)-> serial.Serial:
     """ Open serial connection to arduino. Retries until successful."""
 
     timestamp = time.time()
@@ -191,6 +191,8 @@ def Start():
 
 Start()
 
+__name__ == "__main__"
+
 if __name__ == "__main__":
     while True:
         try:
@@ -205,7 +207,7 @@ if __name__ == "__main__":
         msg = ""
         for i,s in Sensors.items():
             if not s.isCalibrated:
-                #s.Calibrate()
+                s.Calibrate()
                 pass
             msg += f"{i}: {s.value:0.2f}pF  "
         if msg:
