@@ -10,7 +10,7 @@ Description:
 import serial
 import time
 
-COM = "/dev/cu.usbmodem1101" 
+COM = "/dev/cu.usbmodem101" 
 FDC_SCALAR = 0x80000
 CAPDAC_SCALAR = 3.125 # what is this scalar?
 
@@ -76,9 +76,18 @@ class Sensor:
                         self.hiVal = self.loVal + 1000 # set hiVal to be 1000 above loVal
                         window = []
                         sum = 0
+
+                        #debug to see what low point is
+                        print(f"Low point set to {self.loVal:0.2f}pF")
+
                         print(f"Setting Hi point. Hard press {self.id} for {(windowSize-len(window))*interval:.1f} seconds...")
+                        ReadPort
                 # set Hi
                 else:
+                    print(self.value >= self.loVal+(self.loVal*hpThres/100))
+                    print(f"This is the current value: {self.value}")
+
+                    
                     if self.value >= self.loVal+(self.loVal*hpThres/100):
                         print(f"{(windowSize-len(window))*interval:.1f} seconds...")
                         window.append(self.value)
@@ -112,7 +121,7 @@ def ConvertToPF(raw_value:int, capdac:int) -> float:
     capacitance_pF = (float(raw_value) / float(FDC_SCALAR)) + C_offset
     return capacitance_pF
 
-def OpenConnection(port='/dev/cu.usbmodem1101', baudrate=115200, timeout=.1)-> serial.Serial:
+def OpenConnection(port='/dev/cu.usbmodem101', baudrate=115200, timeout=.1)-> serial.Serial:
     """ Open serial connection to arduino. Retries until successful."""
 
     timestamp = time.time()
@@ -161,7 +170,7 @@ def ReadPort() -> dict[int, Sensor]:
                 val = ConvertToPF(raw_val, capdac)
                 
                 # create a new Sensor if the id doesn't exist in the dictionary
-                if i not in Sensors:
+                if id not in Sensors:
                     Sensors[id] = Sensor(id)
                 # update the sensor in the dictionary
                 Sensors[id].Update(val)
@@ -191,7 +200,6 @@ def Start():
 
 Start()
 
-__name__ == "__main__"
 
 if __name__ == "__main__":
     while True:
@@ -204,6 +212,8 @@ if __name__ == "__main__":
             arduino = OpenConnection()
             continue
 
+        #debug to see where code is
+        print("reading sensors")
         msg = ""
         for i,s in Sensors.items():
             if not s.isCalibrated:
