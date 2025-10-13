@@ -254,7 +254,7 @@ void loop() {
   }
   TransmitData();
   //Debug();  //cant use Transmit and Debug at the same time
-  if (Serial.available() > 0) {
-     ReceiveData();
-  }
+  // if (Serial.available() > 0) {
+  //    ReceiveData();
+  // }
 }
