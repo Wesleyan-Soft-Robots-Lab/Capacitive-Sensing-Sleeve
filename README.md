@@ -193,7 +193,8 @@ In [fast_multiCap.ino](Scripts/Arduino/fast_multiCap/fast_multiCap.ino)
    3. In loop() function, make sure ```TransmitData()``` function is being used and ```Debug()``` is not being used
    4. Run [fast_multiCap.ino](Scripts/Arduino/fast_multiCap/fast_multiCap.ino)
    5. Run [fast_communication.py](Scripts/Python/fast_communication.py)
-   6. Follow instructions, printed to IDE terminal. "Hard Press" countdown does not start until pressure is sensed on the current specified sensor
+   6. Follow instructions, printed to IDE terminal. "Hard Press" countdown does not start until pressure is sensed on the current specified sensor 
+### Sensor group patches have to be complete (4 patches per FDC chip) to calibrate
 
 ### Custom Hardware Setup 
 
