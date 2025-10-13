@@ -186,7 +186,7 @@ For running the newer python scripts (e.g GUI.py, follow_handGUI.py) the arduino
    - [xArm sdk](https://github.com/xArm-Developer/xArm-Python-SDK?tab=readme-ov-file#installation) - used to control to the xArm.
    - [customtkinter](https://github.com/tomschimansky/customtkinter?tab=readme-ov-file#installation) - used to display graphical user interface
 
-## Calibrating Sensors
+### Calibrating Sensors
 In [fast_multiCap.ino](Scripts/Arduino/fast_multiCap/fast_multiCap.ino)
    1. Define correct amount of FDC and MUX chips
    2. Initialize the sensor "path" with the multiplexor address
