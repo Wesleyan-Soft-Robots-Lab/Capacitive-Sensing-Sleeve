@@ -23,6 +23,7 @@ It also consolidates relevant work done in:
 * [Setting Up Hardware](#hardware-setup)
 * [Software Guide](#software-guide)
    * [Libraries](#libraries)
+   * [Sensor Calibration](#calibrating-sensors)
    * [Custom Hardware Setup](#custom-hardware-setup)
    * [Writing New Scripts](#writing-new-scripts)
 * [Improve Project](#expanding-the-project)
