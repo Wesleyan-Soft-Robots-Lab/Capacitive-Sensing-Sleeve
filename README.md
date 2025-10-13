@@ -185,6 +185,9 @@ For running the newer python scripts (e.g GUI.py, follow_handGUI.py) the arduino
    - [xArm sdk](https://github.com/xArm-Developer/xArm-Python-SDK?tab=readme-ov-file#installation) - used to control to the xArm.
    - [customtkinter](https://github.com/tomschimansky/customtkinter?tab=readme-ov-file#installation) - used to display graphical user interface
 
+## Calibrating Sensors
+
+
 ### Custom Hardware Setup 
 
 This section is about changing **fast_multiCap.ino** to fit your hardware needs. Scroll down to the "Define sensors" section.
