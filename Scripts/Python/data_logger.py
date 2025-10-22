@@ -1,5 +1,7 @@
 import csv
 import time
+import pathlib
+from pathlib import Path
 
 def elapsedTimeMilliseconds(start, end):
     return (end - start) * 1000
@@ -7,8 +9,17 @@ def elapsedTimeMilliseconds(start, end):
 def startTimer():
     return time.time()
 
+def makeDir(filename):
+    p = pathlib.Path(f'{time.strftime('%Y%m%d')}/')
+    p.mkdir(parents = True, exist_ok=True)
+    fn = filename
+    filepath = p / fn
+    with filepath.open("w", encoding = "utf-8") as f:
+        f.write(result)
+
 def logData(data):
     filename = f'{time.strftime("%Y%m%d")}_SensorLog.csv'
+    makeDir(filename)
     # Check if file exists to determine if we need to write header
     try:
         with open(filename, 'r') as f:
