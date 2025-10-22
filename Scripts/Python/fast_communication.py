@@ -9,6 +9,7 @@ Description:
 """
 import serial
 import time
+import data_logger as logger
 
 COM = "/dev/cu.usbmodem1101" 
 FDC_SCALAR = 0x80000
@@ -191,6 +192,7 @@ def Start():
 
 Start()
 
+startTime = logger.startTimer()
 
 if __name__ == "__main__":
     while True:
@@ -204,10 +206,21 @@ if __name__ == "__main__":
             continue
         
         msg = ""
+        # Create a single row list for all sensors in this timestamp
+        current_time = time.time()
+        elapsedTime = logger.elapsedTimeMilliseconds(startTime, current_time)
+        rows = []
+        
         for i,s in Sensors.items():
             if not s.isCalibrated:
                 s.Calibrate()
                 pass
-            msg += f"{i}: {s.value:0.2f}pF  "
+            # Add data for each sensor
+            rows.append([elapsedTime, i, f"{s.value:0.2f}"])
+            msg += f"{i}: {s.value:0.2f}pF  \n"
+            
         if msg:
             print(msg)
+        # Only log if we have sensor data
+        if rows:
+            logger.logData(rows)
