@@ -9,27 +9,26 @@ def elapsedTimeMilliseconds(start, end):
 def startTimer():
     return time.time()
 
-def makeDir(filename):
-    p = pathlib.Path(f'{time.strftime('%Y%m%d')}/')
-    p.mkdir(parents = True, exist_ok=True)
-    fn = filename
-    filepath = p / fn
-    with filepath.open("w", encoding = "utf-8") as f:
-        f.write(result)
-
 def logData(data):
     filename = f'{time.strftime("%Y%m%d")}_SensorLog.csv'
-    makeDir(filename)
+
+    # Create a day-specific directory inside tests/data/cap-sensor_data
+    day_dir = Path.cwd() / 'tests' / 'data' / 'cap-sensor_data' / f'{time.strftime("%Y%m%d")} '
+    # Trim any accidental trailing spaces and ensure path exists
+    day_dir = Path(str(day_dir).strip())
+    day_dir.mkdir(parents=True, exist_ok=True)
+
+    filepath = day_dir / filename
+
     # Check if file exists to determine if we need to write header
-    try:
-        with open(filename, 'r') as f:
-            file_exists = True
-    except FileNotFoundError:
-        file_exists = False
-    
-    with open(filename, 'a', newline='') as csvfile:
+    file_exists = filepath.exists()
+
+    # Append rows to the CSV in the day directory
+    with filepath.open('a', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        # Write header only if file is new
         if not file_exists:
             writer.writerow(['Timestamp', 'SensorID', 'ValuePF'])
         writer.writerows(data)
+
+if __name__ == "__main__":
+    "Testing Only"
