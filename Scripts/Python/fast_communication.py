@@ -17,7 +17,7 @@ CAPDAC_SCALAR = 3.125 # what is this scalar?
 
 class Sensor:
     def __init__(self, id):
-        self.id = id                # id int8 representation of [mux, port, channel]:(3,3,2 bits)
+        self.id = id                # id int8 representation of [mux, port, channel]:(3,3,2 bits) (Max Individual Sensor "square pixel": 256)
         self.addr= id>>5
         self.port= id>>2 & 0b111
         self.channel = id & 0b11
