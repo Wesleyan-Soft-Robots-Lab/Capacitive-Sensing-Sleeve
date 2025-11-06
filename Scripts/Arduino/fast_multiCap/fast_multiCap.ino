@@ -97,6 +97,8 @@ public:
   void UpdateChannels() {
     ChangeWire(_mux, _port);
 
+    unsigned long startSensorTime = micros();
+    
     for (uint8_t channel = 0; channel < MAX_CHANNELS; channel++) {
       if (_activeChannels[channel] == false) continue;  // skip inactive channels
       else {
@@ -121,6 +123,9 @@ public:
         }
       }
     }
+    unsigned long elapsedSensorTime = micros() - startSensorTime;
+    Serial.print("FDC chip read time (us): ");
+    Serial.println(elapsedSensorTime);
   }
   /*
   float ConvertToPF(uint32_t raw_value, uint8_t capdac) {                  ** this equation is now done in python (left it here to avoid searching for it)
@@ -249,10 +254,22 @@ void setup() {
 }
 
 void loop() {
+  unsigned long loopStart = micros();
   for (int i = 0; i < FDC_COUNT; i++) {
+    unsigned long FDCStart = micros();
     sensors[i].UpdateChannels();
+    unsigned long elapsedFDC = micros() - FDCStart;
+    Serial.print("Sensor ");
+    Serial.print(i);
+    Serial.print(" total read time (us): ");
+    Serial.println(fdcElapsed);
   }
+
+  unsigned long transmitData = micros();
   TransmitData();
+  unsigned long elapsedData = micros() - transmitData;
+  Serial.print("Transmit time (us): ");
+  Serial.println(txElapsed);
   //Debug();  //cant use Transmit and Debug at the same time
   // if (Serial.available() > 0) {
   //    ReceiveData();
