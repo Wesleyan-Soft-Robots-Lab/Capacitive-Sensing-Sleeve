@@ -124,7 +124,7 @@ public:
       }
     }
     unsigned long elapsedSensorTime = micros() - startSensorTime;
-    Serial.print("FDC chip read time (us): ");
+    Serial.print("FDC chip read time: ");
     Serial.println(elapsedSensorTime);
   }
   /*
@@ -261,17 +261,17 @@ void loop() {
     unsigned long elapsedFDC = micros() - FDCStart;
     Serial.print("Sensor ");
     Serial.print(i);
-    Serial.print(" total read time (us): ");
-    Serial.println(fdcElapsed);
+    Serial.print("total read time: ");
+    Serial.println(elapsedFDC);
   }
 
   unsigned long transmitData = micros();
-  TransmitData();
+  // TransmitData();
+   Debug();  //cant use Transmit and Debug at the same time
+  if (Serial.available() > 0) {
+     ReceiveData();
+  }
   unsigned long elapsedData = micros() - transmitData;
   Serial.print("Transmit time (us): ");
-  Serial.println(txElapsed);
-  //Debug();  //cant use Transmit and Debug at the same time
-  // if (Serial.available() > 0) {
-  //    ReceiveData();
-  // }
+  Serial.println(elapsedData);
 }
