@@ -207,20 +207,21 @@ if __name__ == "__main__":
         
         msg = ""
         # Create a single row list for all sensors in this timestamp
-        current_time = time.time()
+        current_time = time.perf_counter()
         elapsedTime = logger.elapsedTimeMilliseconds(startTime, current_time)
-        rows = []
+        sensorData = {}
         
         for i,s in Sensors.items():
             if not s.isCalibrated:
                 s.Calibrate()
                 pass
+            sensorData[i] = s.value
             # Add data for each sensor
-            rows.append([elapsedTime, i, f"{s.value:0.2f}"])
             msg += f"{i}: {s.value:0.2f}pF  \n"
             
         if msg:
             print(msg)
         # Only log if we have sensor data
-        if rows:
-            logger.logData(rows)
+        if sensorData:
+            logger.logData(elapsedTime, sensorData)
+    

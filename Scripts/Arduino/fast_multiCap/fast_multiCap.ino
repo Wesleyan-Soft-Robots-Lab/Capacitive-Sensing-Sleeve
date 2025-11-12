@@ -158,6 +158,8 @@ void initialize() {
   //sensors[2] = Sensor(mux[0], 2);
 
   sensors[0] = Sensor(mux[2], 7);
+  // sensors[1] = Sensor(mux[2], 3);
+  // sensors[2] = Sensor(mux[2], 0);
 
   // sensors[3] = Sensor(mux[0], 4);
   // sensors[4] = Sensor(mux[1], 0);
@@ -232,12 +234,11 @@ void TransmitData() {
 //TODO: recieve specific keycode from python to change active channels on a particular sensor
 void ReceiveData() {
   byte data = Serial.read();
-  uint8_t code = (data & 0b11110000)>> 4;
+  // uint8_t code = (data & 0b11110000)>> 4;
   // if (code == 1) {
   //   data = data & 0b00001111;
   //   sensor = Serial.read();
   // }
-
 }
 
 /*
@@ -261,17 +262,17 @@ void loop() {
     unsigned long elapsedFDC = micros() - FDCStart;
     Serial.print("Sensor ");
     Serial.print(i);
-    Serial.print("total read time: ");
+    Serial.print("total read time(micros): ");
     Serial.println(elapsedFDC);
   }
 
   unsigned long transmitData = micros();
-  // TransmitData();
-   Debug();  //cant use Transmit and Debug at the same time
-  if (Serial.available() > 0) {
-     ReceiveData();
-  }
+  TransmitData();
+  //  Debug();  //cant use Transmit and Debug at the same time
+  // if (Serial.available() > 0) {
+  //    ReceiveData();
+  // }
   unsigned long elapsedData = micros() - transmitData;
-  Serial.print("Transmit time (us): ");
+  Serial.print("Transmit time (micros): ");
   Serial.println(elapsedData);
 }
