@@ -164,7 +164,7 @@ The use of Qwiic connect cables eliminate the need to solder.
 ## Hardware Setup
 Follow diagram below:
 
-<img src="doc/images/diagram.svg" alt="circuit layout" width="500px"/>
+<img src="doc/images/diagram.png" alt="circuit layout" width="500px"/>
 
 *the arduino has two sets of I2C pinouts, but they are connected.
 
@@ -242,3 +242,5 @@ Various task, suggestions, and experiments have been listed in the [Issues](http
 - Yamani Mpofu
 - Katelyn McCall
 - Patton Yin
+- Christopher Voong
+- Kido Douglas
