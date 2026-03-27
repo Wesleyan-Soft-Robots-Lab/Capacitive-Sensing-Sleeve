@@ -8,10 +8,28 @@ Description:
 
 """
 import serial
+import serial.tools.list_ports
 import time
 import data_logger as logger
 
-COM = "/dev/cu.usbmodem1101" 
+def find_arduino_port():
+    """
+    Automatically chooses the right USB port for arduino communication. 
+    """
+    ports = serial.tools.list_ports.comports()
+    COM = 'NONE'
+
+    numConnect = len(ports)
+
+    for p in ports:
+        strPort = str(p)
+
+        if 'IOUSBHostDevice' in strPort:
+            splitPort = strPort.split(' ')
+            COM = splitPort[0]
+    return COM
+
+COM = find_arduino_port()
 FDC_SCALAR = 0x80000
 CAPDAC_SCALAR = 3.125 # what is this scalar?
 
@@ -211,10 +229,10 @@ if __name__ == "__main__":
         elapsedTime = logger.elapsedTimeMilliseconds(startTime, current_time)
         sensorData = {}
         
-        for i,s in Sensors.items():
-            if not s.isCalibrated:
-                s.Calibrate()
-                pass
+        for i,s in Sensors.items(): 
+            # if not s.isCalibrated:
+            #     s.Calibrate()
+            #     pass
             sensorData[i] = s.value
             # Add data for each sensor
             msg += f"{i}: {s.value:0.2f}pF  \n"
