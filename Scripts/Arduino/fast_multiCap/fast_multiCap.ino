@@ -149,11 +149,11 @@ Multiplexor* mux[MUX_COUNT];
 
 void initialize() {
   //store addresses in heap
-  mux[0] = new Multiplexor(ADDR1);
-  mux[1] = new Multiplexor(ADDR2, mux[0], 3);
-  mux[2] = new Multiplexor(ADDR3, mux[1], 4);
+  mux[0] = new Multiplexor(ADDR3);
+  // mux[1] = new Multiplexor(ADDR2, mux[0], 3);
+  // mux[2] = new Multiplexor(ADDR3, mux[1], 4);
 
-  sensors[0] = Sensor(mux[2], 0);
+  sensors[0] = Sensor(mux[0], 7);
 
   return;
 }

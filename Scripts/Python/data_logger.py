@@ -1,8 +1,8 @@
 import csv
 import time
-import pathlib
 from pathlib import Path
 
+_current_session_filepath = None
 
 def elapsedTimeMilliseconds(start, end):
     return (end - start) * 1000
@@ -10,30 +10,41 @@ def elapsedTimeMilliseconds(start, end):
 def startTimer():
     return time.perf_counter()
 
-def logData(timestamp, sensorData: dict[int, float]):
-    filename = f'{time.strftime("%Y%m%d")}_SensorLog.csv'
+def _get_session_filepath():
+    """Generates and caches the filepath with an auto-incrementing test number."""
+    global _current_session_filepath
+    
+    # If the filepath was already generated for this run, reuse it
+    if _current_session_filepath is not None:
+        return _current_session_filepath
 
-    # Create a day-specific directory inside tests/data/cap-sensor_data
-    day_dir = Path.cwd() / 'tests' / 'data' / 'cap-sensor_data' / f'{time.strftime("%Y%m%d")} '
-    # Trim any accidental trailing spaces and ensure path exists
+    date_str = time.strftime("%Y%m%d")
+    day_dir = Path.cwd() / 'tests' / 'data' / 'cap-sensor_data' / date_str
+    
     day_dir = Path(str(day_dir).strip())
     day_dir.mkdir(parents=True, exist_ok=True)
 
-    filepath = day_dir / filename
+    # Count existing test files in today's directory to determine the next test number
+    existing_files = list(day_dir.glob(f"{date_str}_Test*_SensorLog.csv"))
+    test_number = len(existing_files) + 1
 
-    # Check if file exists to determine if we need to write header
+    filename = f"{date_str}_Test{test_number}_SensorLog.csv"
+    _current_session_filepath = day_dir / filename
+
+    return _current_session_filepath
+
+def logData(timestamp, sensorData: dict[int, float]):
+    filepath = _get_session_filepath()
+
     file_exists = filepath.exists()
 
     sortedIDs = sorted(sensorData.keys())
 
-    # Append rows to the CSV in the day directory
     with filepath.open('a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         if not file_exists:
             header = ['Timestamp'] + [str(id) for id in sortedIDs]
             writer.writerow(header)
+            
         row = [timestamp] + [f"{sensorData[sid]:.2f}" for sid in sortedIDs]
         writer.writerow(row)
-
-if __name__ == "__main__":
-    "Testing Only"
