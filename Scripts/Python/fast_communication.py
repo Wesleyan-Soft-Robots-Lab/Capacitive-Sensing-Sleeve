@@ -235,10 +235,11 @@ if __name__ == "__main__":
             #     pass
             sensorData[i] = s.value
             # Add data for each sensor
-            msg += f"{i}: {s.value:0.2f}pF  \n"
+            msg += f"{i}: {s.value:0.2f}pF | "
             
         if msg:
             print(msg)
+            
         # Only log if we have sensor data
         if sensorData:
             logger.logData(elapsedTime, sensorData)
