@@ -25,6 +25,7 @@ It also consolidates relevant work done in:
    * [Libraries](#libraries)
    * [Custom Hardware Setup](#custom-hardware-setup)
    * [Writing New Scripts](#writing-new-scripts)
+   * [Setting Up ROS on UNIX Systems](#setting-up-ros-environment-on-unix-systems)
 * [Improve Project](#expanding-the-project)
 * [Helpful Information](#helpful-information)
 * [Credits](#credits)
@@ -228,6 +229,83 @@ while not sensors:
    sensors = comm.ReadPort()
    continue
 ```
+
+## Setting Up ROS Environment on UNIX Systems
+To setup the environment for ROS, we will be using [RoboStack](https://robostack.github.io/GettingStarted.html#__tabbed_1_2). 
+1. You are welcome to use any of the environments listed in the RoboStack setup guide, for this, we will be using the [Conda](https://robostack.github.io/GettingStarted.html#__tabbed_1_2) setup guide.
+### Conda Install
+2. The full list of instructions are listed [here](https://github.com/conda-forge/miniforge)
+   - Use this command in terminal 
+   ```
+   curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+   ```
+   - This is an interactive installation via terminal. Run this script
+
+   ```
+   bash Miniforge3-$(uname)-$(uname -m).sh
+   ```
+
+   - Create path to Conda
+   ```
+   source "${HOME}/conda/etc/profile.d/conda.sh"
+   ```
+
+   - Activate Conda
+   ```
+   conda activate
+   ```
+### ROS Installation
+```Note: Make sure your Conda environment is active before installing ROS```
+
+We will be using [ROS 2 Kilted](https://docs.ros.org/en/kilted/index.html)
+
+1. To create the [ROS desktop environment](https://robostack.github.io/GettingStarted.html#__tabbed_3_4) run this script.
+```
+conda create -n ros_env -c conda-forge -c robostack-kilted ros-kilted-desktop
+```
+
+2. Activate the environment.
+```
+conda activate ros_env
+```
+
+3. Add robostack channel to the environment.
+```
+conda config --env --add channels robostack-kilted
+```
+
+4. Install ROS development tools.
+```
+conda activate ros_env
+conda install -c conda-forge ros-dev-tools
+```
+
+### Test ROS Installation
+Running the scripts below should open up a GUI with a 3D viewer.
+```
+conda activate ros_env
+rviz2
+```
+
+### Deactivating ROS and Conda
+```
+conda deactivate
+```
+
+### Conda Reactivation
+1. To list Conda environments run.
+```
+conda --info envs
+```
+
+2. Copy the desired environment path, it might look like
+``
+/Users/[profilename]/conda/envs/ros_env
+``. Paste it into this command, replace ``/Users/[profilename]/conda/envs/ros_env`` with your environment path.
+```
+conda activate /Users/[profilename]/conda/envs/ros_env
+```
+On the same line as your terminal entry line, there should be a ``rose_env`` to indicate that you are in the environment.
 
 ## Expanding the Project
 Various task, suggestions, and experiments have been listed in the [Issues](https://github.com/Wesleyan-Soft-Robots-Lab/Capacitive-Sensing-Sleeve/issues) tab in the repository. It would be greatly appreciated to maintain this workflow for progress tracking and overall project management. Feel free to raise your own issues and create more labels!!
