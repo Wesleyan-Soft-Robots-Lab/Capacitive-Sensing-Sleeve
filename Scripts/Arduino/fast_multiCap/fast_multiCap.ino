@@ -154,7 +154,6 @@ void initialize() {
   // mux[2] = new Multiplexor(ADDR3, mux[1], 4);
 
   sensors[0] = Sensor(mux[0], 7);
-  sensors[1] = Sensor(mux[0], 6);
 
   return;
 }
