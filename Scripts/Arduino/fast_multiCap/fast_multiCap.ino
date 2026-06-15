@@ -112,13 +112,13 @@ public:
           int32_t raw_val = ((int32_t)(int16_t)value[0] << 8) | (value[1] >> 8);  // hence, raw_val is signed 24bits
 
           // adjust capdac to keep raw_val within UPPER/LOWER bound, 0<=capdac<=31 
-          if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
-            _capdacValues[channel] += 1;
-            _capdacAdjusted[channel] = true;
-          } else if ((raw_val < (int32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
-            _capdacValues[channel] -= 1;
-            _capdacAdjusted[channel] = true;
-          }
+          // if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
+          //   _capdacValues[channel] += 1;
+          //   _capdacAdjusted[channel] = true;
+          // } else if ((raw_val < (int32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
+          //   _capdacValues[channel] -= 1;
+          //   _capdacAdjusted[channel] = true;
+          // }
           _channelValues[channel] = raw_val;
         }
       }
@@ -142,7 +142,7 @@ public:
 //=   Define FDC Sensors, Multiplexors
 //=======================================
 
-#define FDC_COUNT 1  //10
+#define FDC_COUNT 2  //10
 #define MUX_COUNT 1  //3
 Sensor sensors[FDC_COUNT];
 Multiplexor* mux[MUX_COUNT];
@@ -154,6 +154,7 @@ void initialize() {
   // mux[2] = new Multiplexor(ADDR3, mux[1], 4);
 
   sensors[0] = Sensor(mux[0], 7);
+  sensors[1] = Sensor(mux[0], 6);
 
   return;
 }

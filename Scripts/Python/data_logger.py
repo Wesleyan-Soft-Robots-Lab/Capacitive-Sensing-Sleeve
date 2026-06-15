@@ -25,10 +25,10 @@ def _get_session_filepath():
     day_dir.mkdir(parents=True, exist_ok=True)
 
     # Count existing test files in today's directory to determine the next test number
-    existing_files = list(day_dir.glob(f"{date_str}_Test*_SensorLog.csv"))
+    existing_files = list(day_dir.glob(f"{date_str}_*SensorBigShield_Test_1cm_SensorLog.csv"))
     test_number = len(existing_files) + 1
 
-    filename = f"{date_str}_Test{test_number}_SensorLog.csv"
+    filename = f"{date_str}_{test_number}SensorBigShield_Test_1cm_SensorLog.csv"
     _current_session_filepath = day_dir / filename
 
     return _current_session_filepath

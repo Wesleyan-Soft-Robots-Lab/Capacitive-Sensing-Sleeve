@@ -177,7 +177,7 @@ def ReadPort() -> dict[int, Sensor]:
                 capdac = data[4] & 0b1111
                 if capdac == 30:
                     print(f"Sensor {id} capdac is 31...")
-                val = ConvertToPF(raw_val, capdac)
+                val = raw_val
                 
                 # create a new Sensor if the id doesn't exist in the dictionary
                 if id not in Sensors:
