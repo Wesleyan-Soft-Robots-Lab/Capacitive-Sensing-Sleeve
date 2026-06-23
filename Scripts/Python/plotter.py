@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import math 
+import scipy.signal as signal
 
 def normalizeData(csv_file):
     ds = pd.read_csv(csv_file)
@@ -22,9 +23,10 @@ def normalizeData(csv_file):
     return ds, max_y, min_y
 
 def plotGraphs(csv_file):
-    normalized_ds, max_y, min_y = normalizeData(csv_file)
+    normailized_ds, max_y, min_y = normalizeData(csv_file)
+    filtered_ds = signal.butter(4,normailized_ds, "low", True)
     
-    cols_to_plot = [col for col in normalized_ds.columns if col != "Timestamp" and pd.api.types.is_numeric_dtype(normalized_ds[col])]
+    cols_to_plot = [col for col in normailized_ds.columns if col != "Timestamp" and pd.api.types.is_numeric_dtype(normailized_ds[col])]
     num_plots = len(cols_to_plot)
 
     num_rows = math.ceil(num_plots / 2)
@@ -47,7 +49,7 @@ def plotGraphs(csv_file):
     plt.show()
 
 if __name__ == "__main__":
-    target_csv = "" 
+    target_csv = "/Users/chris/Desktop/Capacitive-Sensing-Sleeve/tests/data/cap-sensor_data/20260623/20260623_2_NOSH_STICK_2cm_SensorLog.csv" 
     
     print(f"Loading and plotting data from {target_csv}...")
     try:

@@ -102,7 +102,7 @@ public:
     for (uint8_t channel = 0; channel < MAX_CHANNELS; channel++) {
       if (_activeChannels[channel] == false) continue;  // skip inactive channels
       else {
-        configureMeasurementSingle(channel, channel, _capdacValues[channel]); // configure FDC chip to read from channel, using capdac
+        configureMeasurementSingle(channel, channel, _capdacValues[channel]); // configure FDC chip to read from channel, using capdac _capdacValues[channel]
         triggerSingleMeasurement(channel, FDC1004_400HZ);  //trigger FDC to start measuring
         // check Protocentral_FDC1004.cpp for delay associated with rate (e.g 100HZ -> 11)
         delay(3);
