@@ -24,7 +24,6 @@ def normalizeData(csv_file):
 
 def plotGraphs(csv_file):
     normailized_ds, max_y, min_y = normalizeData(csv_file)
-    filtered_ds = signal.butter(4,normailized_ds, "low", True)
     
     cols_to_plot = [col for col in normailized_ds.columns if col != "Timestamp" and pd.api.types.is_numeric_dtype(normailized_ds[col])]
     num_plots = len(cols_to_plot)
@@ -39,7 +38,7 @@ def plotGraphs(csv_file):
         axes = [axes]
         
     for i, col in enumerate(cols_to_plot):
-        normalized_ds.plot(x="Timestamp", y=col, ax=axes[i], title=col, ylim=(min_y*1.05, max_y*1.05))
+        normailized_ds.plot(x="Timestamp", y=col, ax=axes[i], title=col, ylim=(min_y*1.05, max_y*1.05))
         
     if num_plots > 1:
         for j in range(num_plots, len(axes)):
@@ -49,7 +48,7 @@ def plotGraphs(csv_file):
     plt.show()
 
 if __name__ == "__main__":
-    target_csv = "/Users/chris/Desktop/Capacitive-Sensing-Sleeve/tests/data/cap-sensor_data/20260623/20260623_2_NOSH_STICK_2cm_SensorLog.csv" 
+    target_csv = "/Users/chris/Desktop/Capacitive-Sensing-Sleeve/tests/data/cap-sensor_data/20260623/DEMO.csv" 
     
     print(f"Loading and plotting data from {target_csv}...")
     try:

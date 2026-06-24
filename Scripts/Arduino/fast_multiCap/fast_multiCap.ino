@@ -112,13 +112,13 @@ public:
           int32_t raw_val = ((int32_t)(int16_t)value[0] << 8) | (value[1] >> 8);  // hence, raw_val is signed 24bits
 
           // adjust capdac to keep raw_val within UPPER/LOWER bound, 0<=capdac<=31 
-          // if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
-          //   _capdacValues[channel] += 1;
-          //   _capdacAdjusted[channel] = true;
-          // } else if ((raw_val < (int32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
-          //   _capdacValues[channel] -= 1;
-          //   _capdacAdjusted[channel] = true;
-          // }
+          if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
+            _capdacValues[channel] += 1;
+            _capdacAdjusted[channel] = true;
+          } else if ((raw_val < (int32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
+            _capdacValues[channel] -= 1;
+            _capdacAdjusted[channel] = true;
+          }
           _channelValues[channel] = raw_val;
         }
       }
