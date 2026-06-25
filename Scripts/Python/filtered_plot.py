@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt
+import os
 
 def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
     if exclude_cols is None:
@@ -23,20 +24,39 @@ def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
         
     raw_data_2d = df_numeric.values
     time_axis = np.arange(len(df)) / fs
-
     nyq = 0.5 * fs
-    
-    normal_cutoff = cutoff_freq / nyq
-    b_main, a_main = butter(4, normal_cutoff, btype='low', analog=False)
-    filtered_data_2d = filtfilt(b_main, a_main, raw_data_2d, axis=0)
 
+    frequencies_to_plot = np.linspace(0.01, 2, 3)
+    
+    filtered_datasets = {}
+    
+    print("Filtering and saving data...")
+    for freq in frequencies_to_plot:
+        b, a = butter(4, freq / nyq, btype='low', analog=False)
+        filtered_data_2d = filtfilt(b, a, raw_data_2d, axis=0)
+        filtered_datasets[freq] = filtered_data_2d
+        
+        df_output = pd.DataFrame(filtered_data_2d, columns=sensor_ids)
+        
+        for col in exclude_cols:
+            if col in df.columns:
+                df_output[col] = df[col]
+                
+        df_output = df_output[df.columns]
+        
+        freq_label = f"{freq:.2f}Hz"
+        output_filename = csv_path.replace('.csv', f'_FILTERED_{freq_label}.csv')
+        
+        # Save to CSV
+        df_output.to_csv(output_filename, index=False)
+        print(f"Saved: {os.path.basename(output_filename)}")
+
+    print("\nGenerating plots...")
     num_sensors = len(sensor_ids)
     fig, axes = plt.subplots(num_sensors, 1, figsize=(12, 2.5 * num_sensors), sharex=True)
     
     if num_sensors == 1:
         axes = [axes]
-    
-    frequencies_to_plot = np.linspace(0.01, 2, 4)
     
     cmap = plt.cm.YlGnBu
     colors = cmap(np.linspace(0.4, 1.0, len(frequencies_to_plot)))
@@ -45,11 +65,10 @@ def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
         axes[i].plot(time_axis, raw_data_2d[:, i], label='Raw Data', color="#e76f51", alpha=0.4, linewidth=1.5, zorder=1)
         
         for col, freq in enumerate(frequencies_to_plot):
-            b, a = butter(4, freq / nyq, btype='low', analog=False)
-            sensor_filtered = filtfilt(b, a, raw_data_2d[:, i])
+            
+            sensor_filtered = filtered_datasets[freq][:, i]
             
             lw = 3.0 - (col * 0.6) 
-            
             z = 2 + col 
             
             axes[i].plot(
@@ -64,17 +83,14 @@ def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
         
         axes[i].set_title(f'Sensor: {sensor}', loc='left', fontweight='bold')
         axes[i].set_ylabel('Raw Value')
-        
         axes[i].legend(loc='upper right', fontsize='x-small', ncol=5)
         axes[i].grid(True, linestyle='--', alpha=0.4)
 
     axes[-1].set_xlabel('Time (seconds)', fontweight='bold', labelpad=10)
-    
     fig.suptitle('Raw vs. Filtered Sensor Data', fontsize=16, fontweight='bold')
     
     plt.tight_layout(pad=2.0, h_pad=2.5)
     fig.subplots_adjust(top=0.93)
-    
     plt.show()
 
 if __name__ == "__main__":
