@@ -25,7 +25,6 @@ def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
     
     time_axis = np.arange(len(df)) / fs
 
-    print(f"Applying order-4 Butterworth filter at {cutoff_freq} Hz...")
     nyq = 0.5 * fs
     normal_cutoff = cutoff_freq / nyq
     b, a = butter(4, normal_cutoff, btype='low', analog=False)
@@ -37,15 +36,27 @@ def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
     
     if num_sensors == 1:
         axes = [axes]
+    
+    bl = ["#f4a261","#e9c46a", "#2a9d8f"]
+    frequencies_to_plot = np.linspace(0.01, 2, 3)
 
     for i, sensor in enumerate(sensor_ids):
-        axes[i].plot(time_axis, raw_data_2d[:, i], label='Raw Data', color='red', alpha=0.5, linewidth=1.5)
-        
-        axes[i].plot(time_axis, filtered_data_2d[:, i], label=f'Filtered ({cutoff_freq} Hz)', color='blue', linewidth=2)
+        axes[i].plot(time_axis, raw_data_2d[:, i], label='Raw Data', color="#287271", alpha=0.35, linewidth=1.5)
+        alpha = 1
+        for col, freq in enumerate(frequencies_to_plot):
+            
+            b, a = butter(4, freq / nyq, btype='low', analog=False)
+            
+            sensor_filtered = filtfilt(b, a, raw_data_2d[:, i])
+            
+            # Plot the newly filtered line
+            axes[i].plot(time_axis, sensor_filtered, label=f'{freq:.2f} Hz', color=bl[col], linewidth=1.5, alpha=alpha)
+            alpha -= 0.25
         
         axes[i].set_title(f'Sensor: {sensor}', loc='left', fontweight='bold')
         axes[i].set_ylabel('Raw Value')
-        axes[i].legend(loc='upper right')
+        
+        axes[i].legend(loc='upper right', fontsize='x-small', ncol=3)
         axes[i].grid(True, linestyle='--', alpha=0.6)
 
     axes[-1].set_xlabel('Time (seconds)', fontweight='bold', labelpad=10)
@@ -60,7 +71,7 @@ def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
 
 if __name__ == "__main__":
     
-    MY_CSV_FILE = '/Users/chris/Desktop/Capacitive-Sensing-Sleeve/tests/data/cap-sensor_data/20260623/DEMO.csv'
+    MY_CSV_FILE = '/Users/chris/Downloads/20260622_2_1ASH+PSVE_DEMO_1cm_SensorLog.csv'
     COLUMNS_TO_IGNORE = ['Timestamp'] 
     
     SAMPLING_RATE = 33.0 
