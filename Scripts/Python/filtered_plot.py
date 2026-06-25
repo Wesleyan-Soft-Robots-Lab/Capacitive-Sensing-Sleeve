@@ -22,14 +22,13 @@ def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
         raise ValueError("No numeric sensor columns found.")
         
     raw_data_2d = df_numeric.values
-    
     time_axis = np.arange(len(df)) / fs
 
     nyq = 0.5 * fs
-    normal_cutoff = cutoff_freq / nyq
-    b, a = butter(4, normal_cutoff, btype='low', analog=False)
     
-    filtered_data_2d = filtfilt(b, a, raw_data_2d, axis=0)
+    normal_cutoff = cutoff_freq / nyq
+    b_main, a_main = butter(4, normal_cutoff, btype='low', analog=False)
+    filtered_data_2d = filtfilt(b_main, a_main, raw_data_2d, axis=0)
 
     num_sensors = len(sensor_ids)
     fig, axes = plt.subplots(num_sensors, 1, figsize=(12, 2.5 * num_sensors), sharex=True)
@@ -37,34 +36,43 @@ def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
     if num_sensors == 1:
         axes = [axes]
     
-    bl = ["#f4a261","#e9c46a", "#2a9d8f"]
-    frequencies_to_plot = np.linspace(0.01, 2, 3)
+    frequencies_to_plot = np.linspace(0.01, 2, 4)
+    
+    cmap = plt.cm.YlGnBu
+    colors = cmap(np.linspace(0.4, 1.0, len(frequencies_to_plot)))
 
     for i, sensor in enumerate(sensor_ids):
-        axes[i].plot(time_axis, raw_data_2d[:, i], label='Raw Data', color="#287271", alpha=0.35, linewidth=1.5)
-        alpha = 1
+        axes[i].plot(time_axis, raw_data_2d[:, i], label='Raw Data', color="#e76f51", alpha=0.4, linewidth=1.5, zorder=1)
+        
         for col, freq in enumerate(frequencies_to_plot):
-            
             b, a = butter(4, freq / nyq, btype='low', analog=False)
-            
             sensor_filtered = filtfilt(b, a, raw_data_2d[:, i])
             
-            # Plot the newly filtered line
-            axes[i].plot(time_axis, sensor_filtered, label=f'{freq:.2f} Hz', color=bl[col], linewidth=1.5, alpha=alpha)
-            alpha -= 0.25
+            lw = 3.0 - (col * 0.6) 
+            
+            z = 2 + col 
+            
+            axes[i].plot(
+                time_axis, 
+                sensor_filtered, 
+                label=f'{freq:.2f} Hz', 
+                color=colors[col], 
+                linewidth=lw, 
+                alpha=1.0, 
+                zorder=z
+            )
         
         axes[i].set_title(f'Sensor: {sensor}', loc='left', fontweight='bold')
         axes[i].set_ylabel('Raw Value')
         
-        axes[i].legend(loc='upper right', fontsize='x-small', ncol=3)
-        axes[i].grid(True, linestyle='--', alpha=0.6)
+        axes[i].legend(loc='upper right', fontsize='x-small', ncol=5)
+        axes[i].grid(True, linestyle='--', alpha=0.4)
 
     axes[-1].set_xlabel('Time (seconds)', fontweight='bold', labelpad=10)
     
     fig.suptitle('Raw vs. Filtered Sensor Data', fontsize=16, fontweight='bold')
     
     plt.tight_layout(pad=2.0, h_pad=2.5)
-    
     fig.subplots_adjust(top=0.93)
     
     plt.show()
@@ -75,7 +83,7 @@ if __name__ == "__main__":
     COLUMNS_TO_IGNORE = ['Timestamp'] 
     
     SAMPLING_RATE = 33.0 
-    CUTOFF_FREQ = 2     # The chosen elbow frequency
+    CUTOFF_FREQ = 2     
     
     plot_filtered_sensors(
         csv_path=MY_CSV_FILE, 
