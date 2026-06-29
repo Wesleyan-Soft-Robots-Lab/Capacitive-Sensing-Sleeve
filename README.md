@@ -27,6 +27,7 @@ It also consolidates relevant work done in:
    * [Custom Hardware Setup](#custom-hardware-setup)
    * [Writing New Scripts](#writing-new-scripts)
    * [Setting Up ROS on UNIX Systems](#setting-up-ros-environment-on-unix-systems)
+   * [ROS Sensor Sleeve Package](#ros-sensor-sleeve-package)
 * [Improve Project](#expanding-the-project)
 * [Helpful Information](#helpful-information)
 * [Credits](#credits)
@@ -317,6 +318,34 @@ conda --info envs
 conda activate /Users/[profilename]/conda/envs/ros_env
 ```
 On the same line as your terminal entry line, there should be a ``rose_env`` to indicate that you are in the environment.
+
+## ROS Sensor Sleeve Package
+Once you have your ROS environment setup, you are now able to utilize the ROS sensor sleeve package. 
+
+1. Activate your conda ROS environment
+2. Run 
+```
+. ~/ros2_install/ros2-osx/setup.bash
+```
+3. Create a new directory. You can name it whatever you'd like. This is your workspace.
+```
+mkdir -p ~/ros2_slws/src
+```
+4. Enter the directory
+```
+cd ~/ros2_slws/src
+```
+
+5. Clone [package](https://github.com/Wesleyan-Soft-Robots-Lab/ROS_CAPSleeve_Package.git) into ```~/ros2_slws/src```
+
+6. CD into the root directory ```~/ros2_slws```
+7. Build the package, ```colcon build --packages-select fdc_sensor_pkg```
+8. Source the package, ```source install/setup.bash```
+> The source command above is varies depending on the *kinds* of shell interpreters you are using.
+
+9. Run the publisher command ```ros2 run fdc_sensor_pkg publisher```
+10. Open a new terminal window and do steps **6-8** again
+11. Run the subscriber command ```ros2 run fdc_sensor_pkg subscriber```
 
 ## Expanding the Project
 Various task, suggestions, and experiments have been listed in the [Issues](https://github.com/Wesleyan-Soft-Robots-Lab/Capacitive-Sensing-Sleeve/issues) tab in the repository. It would be greatly appreciated to maintain this workflow for progress tracking and overall project management. Feel free to raise your own issues and create more labels!!
