@@ -23,6 +23,7 @@ It also consolidates relevant work done in:
 * [Setting Up Hardware](#hardware-setup)
 * [Software Guide](#software-guide)
    * [Libraries](#libraries)
+   * [Sensor Calibration](#calibrating-sensors)
    * [Custom Hardware Setup](#custom-hardware-setup)
    * [Writing New Scripts](#writing-new-scripts)
 * [Improve Project](#expanding-the-project)
@@ -184,6 +185,16 @@ For running the newer python scripts (e.g GUI.py, follow_handGUI.py) the arduino
    - pyserial - used to communicate with the arduino (pre-installed?)
    - [xArm sdk](https://github.com/xArm-Developer/xArm-Python-SDK?tab=readme-ov-file#installation) - used to control to the xArm.
    - [customtkinter](https://github.com/tomschimansky/customtkinter?tab=readme-ov-file#installation) - used to display graphical user interface
+
+### Calibrating Sensors
+In [fast_multiCap.ino](Scripts/Arduino/fast_multiCap/fast_multiCap.ino)
+   1. Define correct amount of FDC and MUX chips
+   2. Initialize the sensor "path" with the multiplexor address
+   3. In loop() function, make sure ```TransmitData()``` function is being used and ```Debug()``` is not being used
+   4. Run [fast_multiCap.ino](Scripts/Arduino/fast_multiCap/fast_multiCap.ino)
+   5. Run [fast_communication.py](Scripts/Python/fast_communication.py)
+   6. Follow instructions, printed to IDE terminal. "Hard Press" countdown does not start until pressure is sensed on the current specified sensor 
+### Sensor group patches have to be complete (4 patches per FDC chip) to calibrate
 
 ### Custom Hardware Setup 
 

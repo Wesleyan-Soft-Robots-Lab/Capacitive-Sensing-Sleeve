@@ -138,30 +138,32 @@ public:
 //=======================================
 
 #define FDC_COUNT 1  //10
-#define MUX_COUNT 1  //3
+#define MUX_COUNT 3  //3
 Sensor sensors[FDC_COUNT];
 Multiplexor* mux[MUX_COUNT];
 
 void initialize() {
   //store addresses in heap
-  /* mux[0] = new Multiplexor(ADDR1);
+  mux[0] = new Multiplexor(ADDR1);
   mux[1] = new Multiplexor(ADDR2, mux[0], 3);
   mux[2] = new Multiplexor(ADDR3, mux[1], 4);
 
+  // sensors[0] = Sensor(mux[0], 0);
+  // sensors[1] = Sensor(mux[0], 2);
+  //sensors[2] = Sensor(mux[0], 2);
+
   sensors[0] = Sensor(mux[2], 7);
-  sensors[1] = Sensor(mux[2], 3);
-  sensors[2] = Sensor(mux[0], 2);
 
-  sensors[3] = Sensor(mux[0], 4);
-  sensors[4] = Sensor(mux[1], 0);
-  sensors[5] = Sensor(mux[1], 1);
-  sensors[6] = Sensor(mux[1], 6);
-  sensors[7] = Sensor(mux[1], 7);
-  sensors[8] = Sensor(mux[2], 0);
-  sensors[9] = Sensor(mux[2], 4); */
+  // sensors[3] = Sensor(mux[0], 4);
+  // sensors[4] = Sensor(mux[1], 0);
+  // sensors[5] = Sensor(mux[1], 1);
+  // sensors[6] = Sensor(mux[1], 6);
+  // sensors[7] = Sensor(mux[1], 7);
+  // sensors[8] = Sensor(mux[2], 0);
+  // sensors[9] = Sensor(mux[2], 4); 
 
-  mux[0] = new Multiplexor(ADDR3);
-  sensors[0] = Sensor(mux[0], 4);
+  // mux[0] = new Multiplexor(ADDR1);
+  // sensors[0] = Sensor(mux[0], 0);
   return;
 }
 
@@ -181,6 +183,7 @@ void Debug() {
     }
   }
   Serial.println();
+  delay(500);
   return;
 }
 
@@ -225,10 +228,10 @@ void TransmitData() {
 void ReceiveData() {
   byte data = Serial.read();
   uint8_t code = (data & 0b11110000)>> 4;
-  /* if code == 1 {
-    data = data & 0b00001111
-    sensor = serial.read();
-  } */
+  // if (code == 1) {
+  //   data = data & 0b00001111;
+  //   sensor = Serial.read();
+  // }
 
 }
 
@@ -249,9 +252,9 @@ void loop() {
   for (int i = 0; i < FDC_COUNT; i++) {
     sensors[i].UpdateChannels();
   }
-  //TransmitData();
-  Debug();  //cant use Transmit and Debug at the same time
-  if (Serial.available() > 0) {
-    ReceiveData();
-  }
+  TransmitData();
+  //Debug();  //cant use Transmit and Debug at the same time
+  // if (Serial.available() > 0) {
+  //    ReceiveData();
+  // }
 }

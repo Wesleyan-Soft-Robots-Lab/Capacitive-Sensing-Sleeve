@@ -10,8 +10,9 @@ Description:
 import serial
 import time
 
+COM = "/dev/cu.usbmodem1101" 
 FDC_SCALAR = 0x80000
-CAPDAC_SCALAR = 3.125
+CAPDAC_SCALAR = 3.125 # what is this scalar?
 
 class Sensor:
     def __init__(self, id):
@@ -77,7 +78,7 @@ class Sensor:
                         sum = 0
                         print(f"Setting Hi point. Hard press {self.id} for {(windowSize-len(window))*interval:.1f} seconds...")
                 # set Hi
-                else:
+                else:                 
                     if self.value >= self.loVal+(self.loVal*hpThres/100):
                         print(f"{(windowSize-len(window))*interval:.1f} seconds...")
                         window.append(self.value)
@@ -111,7 +112,7 @@ def ConvertToPF(raw_value:int, capdac:int) -> float:
     capacitance_pF = (float(raw_value) / float(FDC_SCALAR)) + C_offset
     return capacitance_pF
 
-def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
+def OpenConnection(port=COM, baudrate=115200, timeout=.1)-> serial.Serial:
     """ Open serial connection to arduino. Retries until successful."""
 
     timestamp = time.time()
@@ -142,13 +143,13 @@ def ReadPort() -> dict[int, Sensor]:
         header  | sensor_count | mux | port | ch | value | capdac | ...
     """
     try:
-        header = arduino.read(1)
+        header = arduino.read(size=1)
         if header == b'':
             return Sensors
         elif header == b'\xAA':
-            payload_size = int.from_bytes(arduino.read(1), 'big')
+            payload_size = int.from_bytes(arduino.read(size=1), 'big')
             for i in range(payload_size):
-                data = arduino.read(5)
+                data = arduino.read(size=5)
                 if len(data) < 5:
                     raise ValueError("Incomplete data received.")
                 id = data[0]
@@ -160,7 +161,7 @@ def ReadPort() -> dict[int, Sensor]:
                 val = ConvertToPF(raw_val, capdac)
                 
                 # create a new Sensor if the id doesn't exist in the dictionary
-                if i not in Sensors:
+                if id not in Sensors:
                     Sensors[id] = Sensor(id)
                 # update the sensor in the dictionary
                 Sensors[id].Update(val)
@@ -190,6 +191,7 @@ def Start():
 
 Start()
 
+
 if __name__ == "__main__":
     while True:
         try:
@@ -200,12 +202,12 @@ if __name__ == "__main__":
             time.sleep(1)
             arduino = OpenConnection()
             continue
-
+        
         msg = ""
         for i,s in Sensors.items():
             if not s.isCalibrated:
-                #s.Calibrate()
+                s.Calibrate()
                 pass
-            msg += f"{s.id}: {s.value:0.2f}pF  "
+            msg += f"{i}: {s.value:0.2f}pF  "
         if msg:
             print(msg)

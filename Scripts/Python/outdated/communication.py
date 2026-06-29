@@ -94,7 +94,7 @@ class Sensor:
 """
 Methods 
 """
-def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
+def OpenConnection(port= "/dev/tty.usbmodem11301" , baudrate=115200, timeout=.1)-> serial.Serial:
     """
     Open serial connection to arduino. Retries until successful.
     """
@@ -102,7 +102,7 @@ def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
     printDelay = 5  # seconds
     while True:
         try:
-            return serial.Serial(port=port,   baudrate=baudrate, timeout=timeout)
+            return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
             if time.time() - timestamp > printDelay:
                 timestamp = time.time()

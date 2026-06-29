@@ -1,5 +1,5 @@
 # Creating a Correctly Sized Shield For Your Patch
-[back](../README.md#fdc1004)
+[back](../README.md#learn-how-to-knit-your-own-shield-here)
 
 <img src="images/knit/final-product.jpg" alt="sensor patch" width="500px"/>
 
@@ -75,4 +75,4 @@ Using the cast-off tool follow the video
 ## Done
 <img src="images/knit/final-product.jpg" alt="sensor patch" width="500px"/>
 
-[back](../README.md#fdc1004)
+[back](../README.md#learn-how-to-knit-your-own-shield-here)

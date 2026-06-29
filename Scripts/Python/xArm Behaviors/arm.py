@@ -41,8 +41,8 @@ class Sensor:
             self.highestValue = value
 
 # Globals
-#SERIAL_PORT = "/dev/tty.usbmodem11301"     # Linux/Mac example
-SERIAL_PORT = "COM10"                       # Windows example
+SERIAL_PORT = "/dev/tty.usbmodem1101"     # Linux/Mac example
+# SERIAL_PORT = "COM10"                       # Windows example
 BAUD_RATE = 115200 
 
 arduino = serial.Serial(SERIAL_PORT, BAUD_RATE)
