@@ -98,7 +98,7 @@ The FDC1004 measures the capacitance charge of up to four channel inputs and has
 
 Without getting too technical, the chip works by forcing electrons into the inputs and measuring the "pushback" felt. Applying force on an input sensor allows the electrons to "drain" at a steady rate, resulting in a lower "pushback".
 
-In other words, If the sensor is resisting more electrons, the FDC reads a lower value, and conversly, if the sensor is able to recieve more electrons, a higher value is read. Thus, only **one** connection to the patch is needed (don't connect the patch to ground).
+In other words, If the sensor is resisting more electrons, the FDC reads a lower value, and conversely, if the sensor is able to receive more electrons, a higher value is read. Thus, only **one** connection to the patch is needed (don't connect the patch to ground).
 
 #### [FDC datasheet](https://www.ti.com/lit/ds/symlink/fdc1004.pdf?ts=1726805458775) (pdf)
 
@@ -138,7 +138,7 @@ The use of Qwiic connect cables eliminate the need to solder.
 * [api](https://github.com/xArm-Developer/xArm-Python-SDK/blob/master/doc/api/xarm_api.md)
 * [User manual](https://www.ufactory.cc/wp-content/uploads/2023/05/xArm-User-Manual-V2.0.0.pdf)
 #### <u> Connecting to xArm (First Time)</u>:
-1. Flip the power switch on the AC Control Box. All leds should be lit (Flickering LAN leds are OK). (Double check all cables are properly connected and "Emergency Stop" button isn't pushed down, if so twist it)
+1. Flip the power switch on the AC Control Box. All LEDs should be lit (Flickering LAN LEDs are OK). (Double check all cables are properly connected and "Emergency Stop" button isn't pushed down, if so twist it)
 2. On the Control Box is a sticker with an IP address labeled **192.168.232** !Remember it or where to find it!
 3. Configure IP Address:
     ##### Windows 11:
@@ -159,7 +159,7 @@ The use of Qwiic connect cables eliminate the need to solder.
 ### Download and set up UFactory studio app:
    1. [download ufactory studio app on your machine](https://www.ufactory.us/ufactory-studio)
    2. open and enter 192.168.1.232(IP address found on the arm block sticker) into the search bar
-   3. click connect, and explore the options of arm controll 
+   3. click connect, and explore the options of arm control 
    
    **NB MAC USERS :** The studio app may flag as unsafe and fail to open the first time. Go to system settings, scroll down and click privacy and security. Then scroll to the bottom and you will see the app listed as an unsafe app that tried to open, click allow anyway
 
@@ -227,7 +227,7 @@ this code reflects the diagram [above](#hardware-setup)
    - The multiplexors are defined as linked lists where the root mux-- closest to the arduino-- points to null, and every new mux points to its predecessor via the predecessors port. This means that you can create a singular chain of mux's or create a tree of mux's all leading back to the root mux.
 - **sensors** : stores the fdc objects
    - the sensors are defined by the multiplexor they are attached to and via which port
-   - an additional bitmask arguement can be given to turn on/off specific channels on the FDC chips (by default, all on -> 0b1111). The order is TWOB,TWOA, ONEB, ONEA. My hope is that this speeds up runtime and can be used by the python script to optimize which channels get read.
+   - an additional bitmask argument can be given to turn on/off specific channels on the FDC chips (by default, all on -> 0b1111). The order is TWOB,TWOA, ONEB, ONEA. My hope is that this speeds up runtime and can be used by the python script to optimize which channels get read.
 
 After uploading to Arduino Mega. run fast_communication.py which should work automatically. If you would like to see a gui run gui.py. 
 ### Writing New Scripts
@@ -321,15 +321,15 @@ On the same line as your terminal entry line, there should be a ``rose_env`` to 
 ## Expanding the Project
 Various task, suggestions, and experiments have been listed in the [Issues](https://github.com/Wesleyan-Soft-Robots-Lab/Capacitive-Sensing-Sleeve/issues) tab in the repository. It would be greatly appreciated to maintain this workflow for progress tracking and overall project management. Feel free to raise your own issues and create more labels!!
 ## Helpful Links
-* [Measuring a Single Capcitor](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/blob/main/capacitance/README-cap.md?plain=1#additional-resources)
+* [Measuring a Single Capacitor](https://github.com/Wesleyan-Soft-Robots-Lab/kmccall-sensor-computation/blob/main/capacitance/README-cap.md?plain=1#additional-resources)
 * [xArm methods](https://github.com/xArm-Developer/xArm-Python-SDK/blob/master/doc/api/xarm_api.md)
 * [new Protocentral version](https://github.com/Protocentral/ProtoCentral_fdc1004_breakout/tree/master/src) (not working. ik why, but don't have time to fix it)
 ## Credits
-- EmPRISE lab at Cornell Univerisity
+- EmPRISE lab at Cornell University
 - Sonia Roberts
 - Miles Modeste
+- Christopher Voong
 - Yamani Mpofu
+- Kido Douglas
 - Katelyn McCall
 - Patton Yin
-- Christopher Voong
-- Kido Douglas
