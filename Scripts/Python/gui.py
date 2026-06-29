@@ -12,7 +12,7 @@ TODO:
 """
 import os
 import customtkinter as ct
-import Scripts.Python.fast_communication as comm
+import fast_communication as comm
 import pandas as pd
 import json
 import time

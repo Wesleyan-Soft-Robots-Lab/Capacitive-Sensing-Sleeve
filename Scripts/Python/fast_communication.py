@@ -8,15 +8,34 @@ Description:
 
 """
 import serial
+import serial.tools.list_ports
 import time
+import data_logger as logger
 
-COM = "COM3"
+def find_arduino_port():
+    """
+    Automatically chooses the right USB port for arduino communication. 
+    """
+    ports = serial.tools.list_ports.comports()
+    COM = 'NONE'
+
+    numConnect = len(ports)
+
+    for p in ports:
+        strPort = str(p)
+
+        if 'IOUSBHostDevice' in strPort:
+            splitPort = strPort.split(' ')
+            COM = splitPort[0]
+    return COM
+
+COM = find_arduino_port()
 FDC_SCALAR = 0x80000
-CAPDAC_SCALAR = 3.125
+CAPDAC_SCALAR = 3.125 # what is this scalar?
 
 class Sensor:
     def __init__(self, id):
-        self.id = id                # id int8 representation of [mux, port, channel]:(3,3,2 bits)
+        self.id = id                # id int8 representation of [mux, port, channel]:(3,3,2 bits) (Max Individual Sensor "square pixel": 256)
         self.addr= id>>5
         self.port= id>>2 & 0b111
         self.channel = id & 0b11
@@ -78,7 +97,7 @@ class Sensor:
                         sum = 0
                         print(f"Setting Hi point. Hard press {self.id} for {(windowSize-len(window))*interval:.1f} seconds...")
                 # set Hi
-                else:
+                else:                 
                     if self.value >= self.loVal+(self.loVal*hpThres/100):
                         print(f"{(windowSize-len(window))*interval:.1f} seconds...")
                         window.append(self.value)
@@ -112,7 +131,7 @@ def ConvertToPF(raw_value:int, capdac:int) -> float:
     capacitance_pF = (float(raw_value) / float(FDC_SCALAR)) + C_offset
     return capacitance_pF
 
-def OpenConnection(port='COM10', baudrate=115200, timeout=.1)-> serial.Serial:
+def OpenConnection(port=COM, baudrate=115200, timeout=.1)-> serial.Serial:
     """ Open serial connection to arduino. Retries until successful."""
 
     timestamp = time.time()
@@ -143,13 +162,13 @@ def ReadPort() -> dict[int, Sensor]:
         header  | sensor_count | mux | port | ch | value | capdac | ...
     """
     try:
-        header = arduino.read(1)
+        header = arduino.read(size=1)
         if header == b'':
             return Sensors
         elif header == b'\xAA':
-            payload_size = int.from_bytes(arduino.read(1), 'big')
+            payload_size = int.from_bytes(arduino.read(size=1), 'big')
             for i in range(payload_size):
-                data = arduino.read(5)
+                data = arduino.read(size=5)
                 if len(data) < 5:
                     raise ValueError("Incomplete data received.")
                 id = data[0]
@@ -158,10 +177,10 @@ def ReadPort() -> dict[int, Sensor]:
                 capdac = data[4] & 0b1111
                 if capdac == 30:
                     print(f"Sensor {id} capdac is 31...")
-                val = ConvertToPF(raw_val, capdac)
+                val = raw_val
                 
                 # create a new Sensor if the id doesn't exist in the dictionary
-                if i not in Sensors:
+                if id not in Sensors:
                     Sensors[id] = Sensor(id)
                 # update the sensor in the dictionary
                 Sensors[id].Update(val)
@@ -191,6 +210,8 @@ def Start():
 
 Start()
 
+startTime = logger.startTimer()
+
 if __name__ == "__main__":
     while True:
         try:
@@ -201,12 +222,25 @@ if __name__ == "__main__":
             time.sleep(1)
             arduino = OpenConnection()
             continue
-
+        
         msg = ""
-        for i,s in Sensors.items():
-            if not s.isCalibrated:
-                #s.Calibrate()
-                pass
-            msg += f"{i}: {s.value:0.2f}pF  "
+        # Create a single row list for all sensors in this timestamp
+        current_time = time.perf_counter()
+        elapsedTime = logger.elapsedTimeMilliseconds(startTime, current_time)
+        sensorData = {}
+        
+        for i,s in Sensors.items(): 
+            # if not s.isCalibrated:
+            #     s.Calibrate()
+            #     pass
+            sensorData[i] = s.value
+            # Add data for each sensor
+            msg += f"{i}: {s.value:0.2f}pF | "
+            
         if msg:
             print(msg)
+            
+        # Only log if we have sensor data
+        if sensorData:
+            logger.logData(elapsedTime, sensorData)
+    

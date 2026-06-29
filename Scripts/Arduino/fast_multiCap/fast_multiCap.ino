@@ -97,10 +97,12 @@ public:
   void UpdateChannels() {
     ChangeWire(_mux, _port);
 
+    unsigned long startSensorTime = micros();
+    
     for (uint8_t channel = 0; channel < MAX_CHANNELS; channel++) {
       if (_activeChannels[channel] == false) continue;  // skip inactive channels
       else {
-        configureMeasurementSingle(channel, channel, _capdacValues[channel]); // configure FDC chip to read from channel, using capdac
+        configureMeasurementSingle(channel, channel, _capdacValues[channel]); // configure FDC chip to read from channel, using capdac _capdacValues[channel]
         triggerSingleMeasurement(channel, FDC1004_400HZ);  //trigger FDC to start measuring
         // check Protocentral_FDC1004.cpp for delay associated with rate (e.g 100HZ -> 11)
         delay(3);
@@ -121,6 +123,9 @@ public:
         }
       }
     }
+    unsigned long elapsedSensorTime = micros() - startSensorTime;
+    Serial.print("FDC chip read time: ");
+    Serial.println(elapsedSensorTime);
   }
   /*
   float ConvertToPF(uint32_t raw_value, uint8_t capdac) {                  ** this equation is now done in python (left it here to avoid searching for it)
@@ -137,31 +142,20 @@ public:
 //=   Define FDC Sensors, Multiplexors
 //=======================================
 
-#define FDC_COUNT 1  //10
+#define FDC_COUNT 2  //10
 #define MUX_COUNT 1  //3
 Sensor sensors[FDC_COUNT];
 Multiplexor* mux[MUX_COUNT];
 
 void initialize() {
   //store addresses in heap
-  /* mux[0] = new Multiplexor(ADDR1);
-  mux[1] = new Multiplexor(ADDR2, mux[0], 3);
-  mux[2] = new Multiplexor(ADDR3, mux[1], 4);
-
-  sensors[0] = Sensor(mux[2], 7);
-  sensors[1] = Sensor(mux[2], 3);
-  sensors[2] = Sensor(mux[0], 2);
-
-  sensors[3] = Sensor(mux[0], 4);
-  sensors[4] = Sensor(mux[1], 0);
-  sensors[5] = Sensor(mux[1], 1);
-  sensors[6] = Sensor(mux[1], 6);
-  sensors[7] = Sensor(mux[1], 7);
-  sensors[8] = Sensor(mux[2], 0);
-  sensors[9] = Sensor(mux[2], 4); */
-
   mux[0] = new Multiplexor(ADDR3);
-  sensors[0] = Sensor(mux[0], 4);
+  // mux[1] = new Multiplexor(ADDR2, mux[0], 3);
+  // mux[2] = new Multiplexor(ADDR3, mux[1], 4);
+
+  sensors[0] = Sensor(mux[0], 7);
+  sensors[1] = Sensor(mux[0], 6);
+
   return;
 }
 
@@ -181,6 +175,7 @@ void Debug() {
     }
   }
   Serial.println();
+  delay(500);
   return;
 }
 
@@ -224,12 +219,11 @@ void TransmitData() {
 //TODO: recieve specific keycode from python to change active channels on a particular sensor
 void ReceiveData() {
   byte data = Serial.read();
-  uint8_t code = (data & 0b11110000)>> 4;
-  /* if code == 1 {
-    data = data & 0b00001111
-    sensor = serial.read();
-  } */
-
+  // uint8_t code = (data & 0b11110000)>> 4;
+  // if (code == 1) {
+  //   data = data & 0b00001111;
+  //   sensor = Serial.read();
+  // }
 }
 
 /*
@@ -246,12 +240,24 @@ void setup() {
 }
 
 void loop() {
+  unsigned long loopStart = micros();
   for (int i = 0; i < FDC_COUNT; i++) {
+    unsigned long FDCStart = micros();
     sensors[i].UpdateChannels();
+    unsigned long elapsedFDC = micros() - FDCStart;
+    Serial.print("Sensor ");
+    Serial.print(i);
+    Serial.print("total read time(micros): ");
+    Serial.println(elapsedFDC);
   }
-  //TransmitData();
-  Debug();  //cant use Transmit and Debug at the same time
-  if (Serial.available() > 0) {
-    ReceiveData();
-  }
+
+  unsigned long transmitData = micros();
+  TransmitData();
+  //  Debug();  //cant use Transmit and Debug at the same time
+  // if (Serial.available() > 0) {
+  //    ReceiveData();
+  // }
+  unsigned long elapsedData = micros() - transmitData;
+  Serial.print("Transmit time (micros): ");
+  Serial.println(elapsedData);
 }
