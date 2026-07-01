@@ -38,7 +38,7 @@ def plotGraphs(csv_file):
         axes = [axes]
         
     for i, col in enumerate(cols_to_plot):
-        normailized_ds.plot(x="Timestamp", y=col, ax=axes[i], title=col, ylim=(min_y*1.05, max_y*1.05))
+        normailized_ds.plot(x="Timestamp", y=col, ax=axes[i], title=col, ylim=(-5000, 150000))
         
     if num_plots > 1:
         for j in range(num_plots, len(axes)):
@@ -48,7 +48,7 @@ def plotGraphs(csv_file):
     plt.show()
 
 if __name__ == "__main__":
-    target_csv = "/Users/chris/Desktop/Capacitive-Sensing-Sleeve/tests/data/cap-sensor_data/20260629/20260629_4_NOSH_BIGALUM_1cm_SensorLog.csv" 
+    target_csv = "/Users/chris/ros2_slws/tests/data/cap-sensor_data/20260629/20260629_8SensorBigShield_Test_1cm_SensorLog.csv" 
     
     print(f"Loading and plotting data from {target_csv}...")
     try:
