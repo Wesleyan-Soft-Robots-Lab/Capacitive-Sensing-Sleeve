@@ -94,39 +94,34 @@ public:
   }
 
   //Reads all active channels. updates _channelValues[]
-  void UpdateChannels() {
+  void TriggerChannel(uint8_t channel) {
+    if (_activeChannels[channel] == false) return;  // skip inactive channels
+
     ChangeWire(_mux, _port);
-
-    unsigned long startSensorTime = micros();
-    
-    for (uint8_t channel = 0; channel < MAX_CHANNELS; channel++) {
-      if (_activeChannels[channel] == false) continue;  // skip inactive channels
-      else {
-        configureMeasurementSingle(channel, channel, _capdacValues[channel]); // configure FDC chip to read from channel, using capdac _capdacValues[channel]
-        triggerSingleMeasurement(channel, FDC1004_400HZ);  //trigger FDC to start measuring
-        // check Protocentral_FDC1004.cpp for delay associated with rate (e.g 100HZ -> 11)
-        delay(3);
-
-        uint16_t value[2];  // first element is signed int16_t. second element is unsigned and last 8bits are all 0
-        if (!readMeasurement(channel, value)) { //read measurement automatically updates value[2]
-          int32_t raw_val = ((int32_t)(int16_t)value[0] << 8) | (value[1] >> 8);  // hence, raw_val is signed 24bits
-
-          // adjust capdac to keep raw_val within UPPER/LOWER bound, 0<=capdac<=31 
-          if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
-            _capdacValues[channel] += 1;
-            _capdacAdjusted[channel] = true;
-          } else if ((raw_val < (int32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
-            _capdacValues[channel] -= 1;
-            _capdacAdjusted[channel] = true;
-          }
-          _channelValues[channel] = raw_val;
-        }
-      }
-    }
-    unsigned long elapsedSensorTime = micros() - startSensorTime;
-    Serial.print("FDC chip read time: ");
-    Serial.println(elapsedSensorTime);
+    configureMeasurementSingle(channel, channel, _capdacValues[channel]);
+    triggerSingleMeasurement(channel, FDC1004_400HZ);
   }
+
+  void ReadChannel(uint8_t channel) {
+    if (_activeChannels[channel] == false) return;  // skip inactive channels
+
+    ChangeWire(_mux, _port); // Must switch the MUX back to this sensor before reading
+    uint16_t value[2];
+    if (!readMeasurement(channel, value)) { 
+      int32_t raw_val = ((int32_t)(int16_t)value[0] << 8) | (value[1] >> 8); 
+
+      // adjust capdac to keep raw_val within UPPER/LOWER bound
+      if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
+        _capdacValues[channel] += 1;
+        _capdacAdjusted[channel] = true;
+      } else if ((raw_val < (int32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
+        _capdacValues[channel] -= 1;
+        _capdacAdjusted[channel] = true;
+      }
+      _channelValues[channel] = raw_val;
+    }
+  }
+  };
   /*
   float ConvertToPF(uint32_t raw_value, uint8_t capdac) {                  ** this equation is now done in python (left it here to avoid searching for it)
     //Convert from raw measurement to picofarads
@@ -136,7 +131,6 @@ public:
     return capacitance_pF;
   }
   */
-};
 
 //=======================================
 //=   Define FDC Sensors, Multiplexors
@@ -241,23 +235,22 @@ void setup() {
 
 void loop() {
   unsigned long loopStart = micros();
-  for (int i = 0; i < FDC_COUNT; i++) {
-    unsigned long FDCStart = micros();
-    sensors[i].UpdateChannels();
-    unsigned long elapsedFDC = micros() - FDCStart;
-    Serial.print("Sensor ");
-    Serial.print(i);
-    Serial.print("total read time(micros): ");
-    Serial.println(elapsedFDC);
+
+  // Iterate through channels
+  for (uint8_t ch = 0; ch < MAX_CHANNELS; ch++) {
+    
+   //Trigger this channel on ALL sensors in rapid succession
+    for (int i = 0; i < FDC_COUNT; i++) {
+      sensors[i].TriggerChannel(ch);
+    }
+    delay(3);
+
+   //Read the finished data from ALL sensors
+    for (int i = 0; i < FDC_COUNT; i++) {
+      sensors[i].ReadChannel(ch);
+    }
   }
 
-  unsigned long transmitData = micros();
+  // Send the batch of updated data over Serial
   TransmitData();
-  //  Debug();  //cant use Transmit and Debug at the same time
-  // if (Serial.available() > 0) {
-  //    ReceiveData();
-  // }
-  unsigned long elapsedData = micros() - transmitData;
-  Serial.print("Transmit time (micros): ");
-  Serial.println(elapsedData);
 }
