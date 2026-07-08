@@ -11,7 +11,7 @@ def spread(data_set, id, plot):
             print(f"The standard deviation Of {id}: {df[col].std()}")
 
     if plot:
-        sb.violinplot(data=df, y=str(id))
+        sb.histplot(data=df, x=str(id))
         plt.title(f"Violin Plot of Sensor {id}")
         plt.show()
 

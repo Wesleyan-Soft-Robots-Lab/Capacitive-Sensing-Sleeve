@@ -32,6 +32,7 @@ a0  a1  a2
 #define ADDR1 0x72  // 1st link multiplexer
 #define ADDR2 0x71
 #define ADDR3 0x70
+#define ADDR4 0x73
 
 #define UPPER_BOUND 0x6ACFC0  //7mill   possible bug might need to adjust
 #define LOWER_BOUND (-1 * UPPER_BOUND)
@@ -135,7 +136,7 @@ Multiplexor* mux[MUX_COUNT];
 
 void initialize() {
   //store addresses in heap
-  mux[0] = new Multiplexor(ADDR3);
+  mux[0] = new Multiplexor(ADDR4);
   // mux[1] = new Multiplexor(ADDR2, mux[0], 3);
   // mux[2] = new Multiplexor(ADDR3, mux[1], 4);
 
