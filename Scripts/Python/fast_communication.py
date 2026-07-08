@@ -131,14 +131,14 @@ def ConvertToPF(raw_value:int, capdac:int) -> float:
     capacitance_pF = (float(raw_value) / float(FDC_SCALAR)) + C_offset
     return capacitance_pF
 
-def OpenConnection(port=COM, baudrate=115200, timeout=.1)-> serial.Serial:
+def OpenConnection(port=COM, baudrate=1000000, timeout=.1)-> serial.Serial:
     """ Open serial connection to arduino. Retries until successful."""
 
     timestamp = time.time()
     printDelay = 5  # seconds
     while True:
         try:
-            return serial.Serial(port=port,   baudrate=baudrate, timeout=timeout)
+            return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
             if time.time() - timestamp > printDelay:
                 timestamp = time.time()

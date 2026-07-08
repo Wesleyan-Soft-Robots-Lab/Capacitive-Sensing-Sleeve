@@ -55,20 +55,21 @@ public:
     : _addr(name), _prev(previous), _connectingPort(connectingPort) {}
 };
 
+// Cache to store the current state of each multiplexer to avoid redundant I2C writes
+static uint8_t muxState[128] = {0}; // Initialize with 0 (no ports selected, or just a default state)
+
 // sets correct i2c wire based on chain
 void ChangeWire(Multiplexor* mux, uint8_t port) {
   if (mux->_prev != nullptr) {
     ChangeWire(mux->_prev, mux->_connectingPort);
   }
-  /* DEBUG uncomment to print to serial
-  Serial.print("ChangeWire on addr 0x");
-  Serial.print(mux->_addr, HEX);
-  Serial.print(" port ");
-  Serial.println(port); */
-
-  Wire.beginTransmission(mux->_addr);
-  Wire.write(1 << port);
-  Wire.endTransmission();
+  
+  if (muxState[mux->_addr] != (1 << port)) {
+    Wire.beginTransmission(mux->_addr);
+    Wire.write(1 << port);
+    Wire.endTransmission();
+    muxState[mux->_addr] = (1 << port);
+  }
 }
 
 /* 
@@ -93,56 +94,41 @@ public:
     }
   }
 
-  //Reads all active channels. updates _channelValues[]
-  void UpdateChannels() {
-    ChangeWire(_mux, _port);
+  // Trigger measurement for a specific channel
+  void TriggerChannel(uint8_t channel) {
+    if (_activeChannels[channel]) {
+      ChangeWire(_mux, _port);
+      configureMeasurementSingle(channel, channel, _capdacValues[channel]);
+      triggerSingleMeasurement(channel, FDC1004_400HZ);
+    }
+  }
 
-    unsigned long startSensorTime = micros();
-    
-    for (uint8_t channel = 0; channel < MAX_CHANNELS; channel++) {
-      if (_activeChannels[channel] == false) continue;  // skip inactive channels
-      else {
-        configureMeasurementSingle(channel, channel, _capdacValues[channel]); // configure FDC chip to read from channel, using capdac _capdacValues[channel]
-        triggerSingleMeasurement(channel, FDC1004_400HZ);  //trigger FDC to start measuring
-        // check Protocentral_FDC1004.cpp for delay associated with rate (e.g 100HZ -> 11)
-        delay(3);
+  // Read measurement for a specific channel
+  void ReadChannel(uint8_t channel) {
+    if (_activeChannels[channel]) {
+      ChangeWire(_mux, _port);
+      uint16_t value[2];
+      if (!readMeasurement(channel, value)) {
+        int32_t raw_val = ((int32_t)(int16_t)value[0] << 8) | (value[1] >> 8);
 
-        uint16_t value[2];  // first element is signed int16_t. second element is unsigned and last 8bits are all 0
-        if (!readMeasurement(channel, value)) { //read measurement automatically updates value[2]
-          int32_t raw_val = ((int32_t)(int16_t)value[0] << 8) | (value[1] >> 8);  // hence, raw_val is signed 24bits
-
-          // adjust capdac to keep raw_val within UPPER/LOWER bound, 0<=capdac<=31 
-          if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
-            _capdacValues[channel] += 1;
-            _capdacAdjusted[channel] = true;
-          } else if ((raw_val < (int32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
-            _capdacValues[channel] -= 1;
-            _capdacAdjusted[channel] = true;
-          }
-          _channelValues[channel] = raw_val;
+        if ((raw_val > (int32_t)UPPER_BOUND) && (_capdacValues[channel] < FDC1004_CAPDAC_MAX)) {
+          _capdacValues[channel] += 1;
+          _capdacAdjusted[channel] = true;
+        } else if ((raw_val < (int32_t)LOWER_BOUND) && (_capdacValues[channel] > 0)) {
+          _capdacValues[channel] -= 1;
+          _capdacAdjusted[channel] = true;
         }
+        _channelValues[channel] = raw_val;
       }
     }
-    unsigned long elapsedSensorTime = micros() - startSensorTime;
-    Serial.print("FDC chip read time: ");
-    Serial.println(elapsedSensorTime);
   }
-  /*
-  float ConvertToPF(uint32_t raw_value, uint8_t capdac) {                  ** this equation is now done in python (left it here to avoid searching for it)
-    //Convert from raw measurement to picofarads
-    //Capacitance (pf) = (measurement [23:0]) / 2^19 ) + C_offset
-    float C_offset = (float)capdac * (float)CAPDAC_SCALAR;
-    float capacitance_pF = (float)raw_value / (float)FDC_SCALAR + C_offset;
-    return capacitance_pF;
-  }
-  */
 };
 
 //=======================================
 //=   Define FDC Sensors, Multiplexors
 //=======================================
 
-#define FDC_COUNT 2  //10
+#define FDC_COUNT 8  //10
 #define MUX_COUNT 1  //3
 Sensor sensors[FDC_COUNT];
 Multiplexor* mux[MUX_COUNT];
@@ -155,6 +141,12 @@ void initialize() {
 
   sensors[0] = Sensor(mux[0], 7);
   sensors[1] = Sensor(mux[0], 6);
+  sensors[2] = Sensor(mux[0], 5);
+  sensors[3] = Sensor(mux[0], 4);
+  sensors[4] = Sensor(mux[0], 3);
+  sensors[5] = Sensor(mux[0], 2);
+  sensors[6] = Sensor(mux[0], 1);
+  sensors[7] = Sensor(mux[0], 0);
 
   return;
 }
@@ -231,7 +223,7 @@ MAIN
 */
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(1000000);
   Wire.begin();
   Wire.setClock(400000);
   initialize();
@@ -241,15 +233,24 @@ void setup() {
 
 void loop() {
   unsigned long loopStart = micros();
-  for (int i = 0; i < FDC_COUNT; i++) {
-    unsigned long FDCStart = micros();
-    sensors[i].UpdateChannels();
-    unsigned long elapsedFDC = micros() - FDCStart;
-    Serial.print("Sensor ");
-    Serial.print(i);
-    Serial.print("total read time(micros): ");
-    Serial.println(elapsedFDC);
+  for (uint8_t channel = 0; channel < MAX_CHANNELS; channel++) {
+    // 1. Trigger this channel on all sensors
+    for (int i = 0; i < FDC_COUNT; i++) {
+      sensors[i].TriggerChannel(channel);
+    }
+    
+    // 2. Wait once for the measurement to complete (400Hz -> 2.5ms, so 3ms is safe)
+    delay(3);
+    
+    // 3. Read the measurements
+    for (int i = 0; i < FDC_COUNT; i++) {
+      sensors[i].ReadChannel(channel);
+    }
   }
+  
+  unsigned long elapsedFDC = micros() - loopStart;
+  Serial.print("All sensors total read time(micros): ");
+  Serial.println(elapsedFDC);
 
   unsigned long transmitData = micros();
   TransmitData();

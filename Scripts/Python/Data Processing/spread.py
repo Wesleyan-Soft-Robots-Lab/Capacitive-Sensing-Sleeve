@@ -4,8 +4,6 @@ import plotter as normal
 import seaborn as sb
 import matplotlib.pyplot as plt
 
-
-
 def spread(data_set, id, plot):
     df, max_y, min_y = normal.normalizeData(data_set)
     for col in df.columns:
