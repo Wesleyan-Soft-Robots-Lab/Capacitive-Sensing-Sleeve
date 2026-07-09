@@ -35,8 +35,10 @@ def _get_session_filepath():
 
     return _current_session_filepath
 
+_fieldnames = None
+
 def logData(timestamp, sensorData: dict[int, float]):
-    global _current_file, _csv_writer, _current_session_filepath
+    global _current_file, _csv_writer, _current_session_filepath, _fieldnames
     filepath = _get_session_filepath()
 
     if _current_file is None or _current_file.closed:
@@ -44,11 +46,16 @@ def logData(timestamp, sensorData: dict[int, float]):
         _current_file = filepath.open('a', newline='')
         _csv_writer = csv.writer(_current_file)
         if not file_exists:
-            sortedIDs = sorted(sensorData.keys())
-            header = ['Timestamp'] + [str(id) for id in sortedIDs]
+            _fieldnames = sorted(sensorData.keys())
+            header = ['Timestamp'] + [str(id) for id in _fieldnames]
             _csv_writer.writerow(header)
+        else:
+            _fieldnames = sorted(sensorData.keys())
 
-    sortedIDs = sorted(sensorData.keys())
-    row = [timestamp] + [f"{sensorData[sid]:.2f}" for sid in sortedIDs]
+    if _fieldnames is None:
+        _fieldnames = sorted(sensorData.keys())
+
+    # Only log the exact fields defined in the header
+    row = [timestamp] + [f"{sensorData.get(sid, 0.0):.2f}" for sid in _fieldnames]
     _csv_writer.writerow(row)
     _current_file.flush()
