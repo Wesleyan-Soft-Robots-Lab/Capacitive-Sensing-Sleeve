@@ -162,14 +162,11 @@ def ReadPort() -> dict[int, Sensor]:
         header       | sensor_count | mux | port | ch | value | capdac | ...
     """
     try:
-        # Search for the 2-byte header 0xAA 0xBB
-        header1 = arduino.read(size=1)
-        if header1 == b'':
+        header = arduino.read(size=1)
+        if header == b'':
             return Sensors
-        if header1 == b'\xAA':
-            header2 = arduino.read(size=1)
-            if header2 == b'\xBB':
-                payload_size = int.from_bytes(arduino.read(size=1), 'big')
+        elif header == b'\xAA':
+            payload_size = int.from_bytes(arduino.read(size=1), 'big')
             for i in range(payload_size):
                 data = arduino.read(size=5)
                 if len(data) < 5:
