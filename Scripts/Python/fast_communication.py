@@ -158,15 +158,18 @@ def ReadPort() -> dict[int, Sensor]:
     Returns: updated dict of Sensors
 
     Format in bytes:
-        0xAA 1b |      n 1b    |       id 1b     | Sensor Val 3b  | *n 
-        header  | sensor_count | mux | port | ch | value | capdac | ...
+        0xAA 0xBB 2b |      n 1b    |       id 1b     | Sensor Val 3b  | *n 
+        header       | sensor_count | mux | port | ch | value | capdac | ...
     """
     try:
-        header = arduino.read(size=1)
-        if header == b'':
+        # Search for the 2-byte header 0xAA 0xBB
+        header1 = arduino.read(size=1)
+        if header1 == b'':
             return Sensors
-        elif header == b'\xAA':
-            payload_size = int.from_bytes(arduino.read(size=1), 'big')
+        if header1 == b'\xAA':
+            header2 = arduino.read(size=1)
+            if header2 == b'\xBB':
+                payload_size = int.from_bytes(arduino.read(size=1), 'big')
             for i in range(payload_size):
                 data = arduino.read(size=5)
                 if len(data) < 5:
@@ -206,6 +209,7 @@ def Start():
     Sensors = dict[int, Sensor]()
 
     arduino = OpenConnection()
+    arduino.reset_input_buffer()
     print("Serial port opened successfully.")     
 
 Start()
@@ -223,7 +227,7 @@ if __name__ == "__main__":
             arduino = OpenConnection()
             continue
         
-        msg = ""
+        # msg = ""
         # Create a single row list for all sensors in this timestamp
         current_time = time.perf_counter()
         elapsedTime = logger.elapsedTimeMilliseconds(startTime, current_time)
@@ -235,10 +239,10 @@ if __name__ == "__main__":
             #     pass
             sensorData[i] = s.value
             # Add data for each sensor
-            msg += f"{i}: {s.value:0.2f}pF | "
+            # msg += f"{i}: {s.value:0.2f}pF | "
             
-        if msg:
-            print(msg)
+        # if msg:
+        #     print(msg)
             
         # Only log if we have sensor data
         if sensorData:

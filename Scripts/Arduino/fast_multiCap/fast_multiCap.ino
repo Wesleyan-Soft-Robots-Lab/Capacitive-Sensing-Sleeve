@@ -176,15 +176,15 @@ void Debug() {
 Creates and sends binary message of every sensors: index/id, raw value, capdac used
 
 Format in bytes:
-|  0xAA  |      n       {       id        |   Sensor Data  } *n|
-| header | sensor_count | mux | port | ch | value | capdac |...|
+| 0xAA | 0xBB |      n       {       id        |   Sensor Data  } *n|
+| hdr1 | hdr2 | sensor_count | mux | port | ch | value | capdac |...|
 
 TODO: add checksum? more data from sensors: capdac adjusted? is sensor active?
 */
 void TransmitData() {
   //header
-  byte header = 0xAA;
-  Serial.write(header);
+  byte header[] = {0xAA, 0xBB};
+  Serial.write(header, 2);
   //count
   uint8_t count = FDC_COUNT * MAX_CHANNELS;
   Serial.write(count);
@@ -228,8 +228,7 @@ void setup() {
   Wire.begin();
   Wire.setClock(400000);
   initialize();
-  while (!Serial)
-    ;
+  while (!Serial);
 }
 
 void loop() {
@@ -250,8 +249,8 @@ void loop() {
   }
   
   unsigned long elapsedFDC = micros() - loopStart;
-  Serial.print("All sensors total read time(micros): ");
-  Serial.println(elapsedFDC);
+  // Serial.print("All sensors total read time(micros): ");
+  // Serial.println(elapsedFDC);
 
   unsigned long transmitData = micros();
   TransmitData();
@@ -260,6 +259,6 @@ void loop() {
   //    ReceiveData();
   // }
   unsigned long elapsedData = micros() - transmitData;
-  Serial.print("Transmit time (micros): ");
-  Serial.println(elapsedData);
+  // Serial.print("Transmit time (micros): ");
+  // Serial.println(elapsedData);
 }
