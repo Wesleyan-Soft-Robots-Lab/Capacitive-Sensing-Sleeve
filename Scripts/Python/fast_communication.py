@@ -162,28 +162,41 @@ def ReadPort() -> dict[int, Sensor]:
         header       | sensor_count | mux | port | ch | value | capdac | ...
     """
     try:
-        header = arduino.read(size=1)
-        if header == b'':
+        header1 = arduino.read(size=1)
+        if header1 == b'':
             return Sensors
-        elif header == b'\xAA':
-            payload_size = int.from_bytes(arduino.read(size=1), 'big')
-            for i in range(payload_size):
-                data = arduino.read(size=5)
-                if len(data) < 5:
-                    raise ValueError("Incomplete data received.")
-                id = data[0]
-                raw_val = toSigned((data[1] << 16) | (data[2] << 8) | data[3], 24)
+        if header1 == b'\xAA':
+            header2 = arduino.read(size=1)
+            if header2 == b'\xBB':
+                payload_size = int.from_bytes(arduino.read(size=1), 'big')
                 
-                capdac = data[4] & 0b1111
-                if capdac == 30:
-                    print(f"Sensor {id} capdac is 31...")
-                val = raw_val
-                
-                # create a new Sensor if the id doesn't exist in the dictionary
-                if id not in Sensors:
-                    Sensors[id] = Sensor(id)
-                # update the sensor in the dictionary
-                Sensors[id].Update(val)
+                # Validation: reject impossible payload sizes to prevent framing errors
+                if payload_size > 100:
+                    return Sensors
+                    
+                for i in range(payload_size):
+                    data = arduino.read(size=5)
+                    if len(data) < 5:
+                        raise ValueError("Incomplete data received.")
+                    id = data[0]
+                    
+                    # Validation: since IDs are strictly sequential (0 to payload_size-1), 
+                    # reject any ID that falls outside this bound.
+                    if id >= payload_size:
+                        continue
+                        
+                    raw_val = toSigned((data[1] << 16) | (data[2] << 8) | data[3], 24)
+                    
+                    capdac = data[4] & 0b1111
+                    if capdac == 30:
+                        print(f"Sensor {id} capdac is 31...")
+                    val = raw_val
+                    
+                    # create a new Sensor if the id doesn't exist in the dictionary
+                    if id not in Sensors:
+                        Sensors[id] = Sensor(id)
+                    # update the sensor in the dictionary
+                    Sensors[id].Update(val)
 
         """ might be useful to add algorithm to match the receive speed to the arduino's transmit speed
         this delay is proportional to the number of sensors connected. not sure by how much

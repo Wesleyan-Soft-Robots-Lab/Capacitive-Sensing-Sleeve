@@ -195,7 +195,7 @@ void TransmitData() {
     for (int cha = 0; cha < MAX_CHANNELS; cha++) {
       int n = i * MAX_CHANNELS * 5 + cha * 5;
       //id
-      data[n] = sensors[i]._mux->_addr << 5 | sensors[i]._port << 2 | (uint8_t)cha;
+      data[n] = i * MAX_CHANNELS + cha;
       //value
       int32_t val = sensors[i]._channelValues[cha];
       data[1 + n] = (val >> 16) & 0xFF;
