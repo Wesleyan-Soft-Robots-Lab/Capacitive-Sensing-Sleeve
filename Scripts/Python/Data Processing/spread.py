@@ -17,6 +17,6 @@ def spread(data_set, id, plot):
 
 
 if __name__ == "__main__":
-    MY_CSV_FILE = 'tests/data/cap-sensor_data/20260623/DEMO.csv'
+    MY_CSV_FILE = '/Users/chris/Desktop/Capacitive-Sensing-Sleeve/tests/data/cap-sensor_data/20260710/20260710_1_MOTOR_OFF_8_FDC_2cm_SensorLog.csv'
 
-    spread(MY_CSV_FILE, 28, True)
+    spread(MY_CSV_FILE, 0, True)

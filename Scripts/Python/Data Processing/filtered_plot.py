@@ -110,7 +110,7 @@ def plot_filtered_sensors(csv_path, fs, cutoff_freq, exclude_cols=None):
 
 if __name__ == "__main__":
     
-    MY_CSV_FILE = 'tests/data/cap-sensor_data/20260623/DEMO.csv'
+    MY_CSV_FILE = '/Users/chris/Desktop/Capacitive-Sensing-Sleeve/tests/data/cap-sensor_data/20260715/20260715_2_PASSIVE+ACT+SYM.csv'
     COLUMNS_TO_IGNORE = ['Timestamp'] 
     
     SAMPLING_RATE = 33.0 
