@@ -56,7 +56,7 @@ def tune_filter_dynamic_sensors(csv_path, fs, min_freq, max_freq, steps=50, excl
     plt.show()
 
 if __name__ == "__main__":
-    MY_CSV_FILE = '/Users/chris/Downloads/20260622_2_1ASH+PSVE_DEMO_1cm_SensorLog.csv'
+    MY_CSV_FILE = '/Users/chris/Desktop/Capacitive-Sensing-Sleeve/tests/data/cap-sensor_data/20260715/20260715_1_PASSIVE+ACT+SYM.csv'
     
     COLUMNS_TO_IGNORE = ['Timestamp'] 
     SAMPLING_RATE = 33.0  

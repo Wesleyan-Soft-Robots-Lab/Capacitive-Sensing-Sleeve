@@ -131,7 +131,7 @@ def ConvertToPF(raw_value:int, capdac:int) -> float:
     capacitance_pF = (float(raw_value) / float(FDC_SCALAR)) + C_offset
     return capacitance_pF
 
-def OpenConnection(port=COM, baudrate=1000000, timeout=.1)-> serial.Serial:
+def OpenConnection(port=COM, baudrate=250000, timeout=.1)-> serial.Serial:
     """ Open serial connection to arduino. Retries until successful."""
 
     timestamp = time.time()
@@ -190,6 +190,7 @@ def ReadPort() -> dict[int, Sensor]:
                     capdac = data[4] & 0b1111
                     if capdac == 30:
                         print(f"Sensor {id} capdac is 31...")
+                    # val = ConvertToPF(raw_val, capdac)
                     val = raw_val
                     
                     # create a new Sensor if the id doesn't exist in the dictionary
@@ -242,14 +243,18 @@ if __name__ == "__main__":
         current_time = time.perf_counter()
         elapsedTime = logger.elapsedTimeMilliseconds(startTime, current_time)
         sensorData = {}
-        
+
+        # for i,s in Sensors.items():
+        #     if not s.isCalibrated and s.id == 0:
+        #         s.Calibrate()
+        #     msg += f"{i}: {s.value:0.2f}pF| {s.percent} | "
+            
         for i,s in Sensors.items(): 
             # if not s.isCalibrated:
             #     s.Calibrate()
             #     pass
             sensorData[i] = s.value
             # Add data for each sensor
-            # msg += f"{i}: {s.value:0.2f}pF | "
             
         # if msg:
         #     print(msg)
