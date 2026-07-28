@@ -130,20 +130,22 @@ public:
 //=   Define FDC Sensors, Multiplexors
 //=======================================
 
-#define FDC_COUNT 2 //10
-#define MUX_COUNT 1  //3
+#define FDC_COUNT 3 //10
+#define MUX_COUNT 2  //3
 Sensor sensors[FDC_COUNT];
 Multiplexor* mux[MUX_COUNT];
 
 void initialize() {
   //store addresses in heap
   mux[0] = new Multiplexor(ADDR5);
+  mux[1] = new Multiplexor(ADDR3, mux[0], 7);
   // mux[1] = new Multiplexor(ADDR2, mux[0], 3);
   // mux[2] = new Multiplexor(ADDR3, mux[1], 4);
 
   sensors[0] = Sensor(mux[0], 0);
 
   sensors[1] = Sensor(mux[0], 4);
+  sensors[2] = Sensor(mux[1], 0);
   //sensors[2] = Sensor(mux[0], 2);
   // sensors[3] = Sensor(mux[0], 3);
   // sensors[4] = Sensor(mux[0], 4);

@@ -84,6 +84,44 @@ def update_plot(canvas, history, max_val=35):
         
     canvas.create_line(*points, fill="cyan", width=2)
 
+def make_draggable(frame):
+    def on_drag_start(event):
+        frame.lift()
+        frame._drag_start_x = event.x_root
+        frame._drag_start_y = event.y_root
+        frame._start_x = frame.winfo_x()
+        frame._start_y = frame.winfo_y()
+
+    def on_drag_motion(event):
+        dx = event.x_root - frame._drag_start_x
+        dy = event.y_root - frame._drag_start_y
+        frame.place(x=frame._start_x + dx, y=frame._start_y + dy)
+
+    def on_drag_release(event):
+        current_x = frame.winfo_x()
+        current_y = frame.winfo_y()
+        
+        # Grid snapping
+        GRID_X = 140
+        GRID_Y = 180
+        
+        rel_x = current_x - 10
+        rel_y = current_y - 10
+        
+        snapped_x = round(rel_x / GRID_X) * GRID_X + 10
+        snapped_y = round(rel_y / GRID_Y) * GRID_Y + 10
+        
+        snapped_x = max(10, snapped_x)
+        snapped_y = max(10, snapped_y)
+        
+        frame.place(x=snapped_x, y=snapped_y)
+
+    # Bind events to the frame and all its current children
+    for widget in (frame, *frame.winfo_children()):
+        widget.bind("<ButtonPress-1>", on_drag_start)
+        widget.bind("<B1-Motion>", on_drag_motion)
+        widget.bind("<ButtonRelease-1>", on_drag_release)
+
 def create_sensor_window(sensor_values):
     """
     Creates a window with widgets for every sensor and their respective id,
@@ -91,6 +129,7 @@ def create_sensor_window(sensor_values):
     """
     window = tk.Tk()
     window.title("Sensor Visualization")
+    window.geometry("800x600") # Set initial window size for grid
     
     frames = {}
     labels = {}
@@ -99,7 +138,7 @@ def create_sensor_window(sensor_values):
     last_states = {}
     butter_filters = {}
     
-    for sensor_id, sensor in sensor_values.items():
+    for idx, (sensor_id, sensor) in enumerate(sensor_values.items()):
         if hasattr(sensor, 'percent'):
             val = sensor.percent
         elif hasattr(sensor, 'value'):
@@ -113,13 +152,23 @@ def create_sensor_window(sensor_values):
         # Increased height to 160 to fit the plot canvas underneath
         frame = tk.Frame(window, bg=color, width=120, height=160, relief=tk.RAISED, borderwidth=2)
         frame.pack_propagate(False)
-        frame.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        # Calculate initial grid position
+        GRID_X = 140
+        GRID_Y = 180
+        cols = 5 # 5 items per row
+        row = idx // cols
+        col = idx % cols
+        frame.place(x=col * GRID_X + 10, y=row * GRID_Y + 10)
         
         lbl = tk.Label(frame, text=text, bg=color, fg="white", font=("Arial", 12, "bold"))
         lbl.pack(expand=True)
         
         # Create the plot
         canvas = create_plot(frame)
+        
+        # Make the frame and its children draggable
+        make_draggable(frame)
         
         frames[sensor_id] = frame
         labels[sensor_id] = lbl
@@ -176,9 +225,9 @@ def main():
     while not sensors:
         try:
             sensors = comm.ReadPort()
-            for i,s in sensors.items(): 
-                if not s.isCalibrated:
-                    s.Calibrate()
+            # for i,s in sensors.items(): 
+            #     if not s.isCalibrated:
+            #         s.Calibrate()
         except Exception:
             pass
             
