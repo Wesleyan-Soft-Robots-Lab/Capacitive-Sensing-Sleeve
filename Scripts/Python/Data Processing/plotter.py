@@ -47,7 +47,7 @@ def plotGraphs(csv_file):
     plt.show()
 
 if __name__ == "__main__":
-    target_csv = "tests/data/cap-sensor_data/20260727/20260727_42_PASSIVE+ACT+SYM.csv"
+    target_csv = "tests/data/cap-sensor_data/20260728/20260728_1_PASSIVE+ACT+SYM.csv"
     
     print(f"Loading and plotting data from {target_csv}...")
     try:
