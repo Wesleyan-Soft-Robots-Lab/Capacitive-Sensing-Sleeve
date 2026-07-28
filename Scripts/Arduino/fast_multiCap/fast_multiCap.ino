@@ -142,6 +142,13 @@ void initialize() {
   // mux[2] = new Multiplexor(ADDR3, mux[1], 4);
 
   sensors[0] = Sensor(mux[0], 5);
+  // sensors[1] = Sensor(mux[0], 1);
+  // sensors[2] = Sensor(mux[0], 2);
+  // sensors[3] = Sensor(mux[0], 3);
+  // sensors[4] = Sensor(mux[0], 4);
+  // sensors[5] = Sensor(mux[0], 5);
+  // sensors[6] = Sensor(mux[0], 6);
+  // sensors[7] = Sensor(mux[0], 7);
 
   return;
 }
