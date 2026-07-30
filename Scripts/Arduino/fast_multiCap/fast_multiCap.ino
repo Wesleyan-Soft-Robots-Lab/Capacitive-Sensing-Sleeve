@@ -34,6 +34,7 @@ a0  a1  a2
 #define ADDR3 0x70
 #define ADDR4 0x73
 #define ADDR5 0x74
+#define ADDR6 0x76
 
 #define UPPER_BOUND 0x6ACFC0  //7mill   possible bug might need to adjust
 #define LOWER_BOUND (-1 * UPPER_BOUND)
@@ -130,8 +131,8 @@ public:
 //=   Define FDC Sensors, Multiplexors
 //=======================================
 
-#define FDC_COUNT 3 //10
-#define MUX_COUNT 2  //3
+#define FDC_COUNT 17 //10
+#define MUX_COUNT 3  //3
 Sensor sensors[FDC_COUNT];
 Multiplexor* mux[MUX_COUNT];
 
@@ -139,19 +140,27 @@ void initialize() {
   //store addresses in heap
   mux[0] = new Multiplexor(ADDR5);
   mux[1] = new Multiplexor(ADDR3, mux[0], 7);
+  mux[2] = new Multiplexor(ADDR6, mux[1], 7);
   // mux[1] = new Multiplexor(ADDR2, mux[0], 3);
   // mux[2] = new Multiplexor(ADDR3, mux[1], 4);
 
   sensors[0] = Sensor(mux[0], 0);
-
-  sensors[1] = Sensor(mux[0], 4);
-  sensors[2] = Sensor(mux[1], 0);
-  //sensors[2] = Sensor(mux[0], 2);
-  // sensors[3] = Sensor(mux[0], 3);
-  // sensors[4] = Sensor(mux[0], 4);
-  // sensors[5] = Sensor(mux[0], 5);
-  // sensors[6] = Sensor(mux[0], 6);
-  // sensors[7] = Sensor(mux[0], 7);
+  sensors[1] = Sensor(mux[0], 1);
+  sensors[2] = Sensor(mux[0], 2);
+  sensors[3] = Sensor(mux[0], 3);
+  sensors[4] = Sensor(mux[0], 4);
+  sensors[5] = Sensor(mux[0], 5);
+  sensors[6] = Sensor(mux[0], 6);
+  sensors[7] = Sensor(mux[1], 0);
+  sensors[8] = Sensor(mux[1], 1);
+  sensors[9] = Sensor(mux[1], 2);
+  sensors[10] = Sensor(mux[1], 3);
+  sensors[11] = Sensor(mux[2], 3);
+  sensors[12] = Sensor(mux[1], 5);
+  sensors[13] = Sensor(mux[1], 6);
+  sensors[14] = Sensor(mux[2], 0);
+  sensors[15] = Sensor(mux[2], 1);
+  sensors[16] = Sensor(mux[2], 2);
 
   return;
 }
