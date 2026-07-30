@@ -191,7 +191,7 @@ def ReadPort() -> dict[int, Sensor]:
                     if capdac == 30:
                         print(f"Sensor {id} capdac is 31...")
                     # val = ConvertToPF(raw_val, capdac)
-                    val = raw_val
+                    val = ConvertToPF(raw_val, capdac=capdac)
                     
                     # create a new Sensor if the id doesn't exist in the dictionary
                     if id not in Sensors:
@@ -238,7 +238,7 @@ if __name__ == "__main__":
             arduino = OpenConnection()
             continue
         
-        # msg = ""
+        msg = ""
         # Create a single row list for all sensors in this timestamp
         current_time = time.perf_counter()
         elapsedTime = logger.elapsedTimeMilliseconds(startTime, current_time)
@@ -247,7 +247,6 @@ if __name__ == "__main__":
         # for i,s in Sensors.items():
         #     if not s.isCalibrated and s.id == 0:
         #         s.Calibrate()
-        #     msg += f"{i}: {s.value:0.2f}pF| {s.percent} | "
             
         for i,s in Sensors.items(): 
             # if not s.isCalibrated:
@@ -255,9 +254,10 @@ if __name__ == "__main__":
             #     pass
             sensorData[i] = s.value
             # Add data for each sensor
+            msg += f"{i}: {s.value:0.2f}pF "
             
-        # if msg:
-        #     print(msg)
+        if msg:
+            print(msg)
             
         # Only log if we have sensor data
         if sensorData:
