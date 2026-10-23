@@ -40,7 +40,7 @@ class Sensor:
         self.port= id>>2 & 0b111
         self.channel = id & 0b11
         self.value = 0              # in pF
-        self.loVal = 4.2 
+        self.loVal = 4.2
         self.hiVal = 25
         self.percent = 0
         self.isCalibrated = False
@@ -170,7 +170,7 @@ def ReadPort() -> dict[int, Sensor]:
             if header2 == b'\xBB':
                 payload_size = int.from_bytes(arduino.read(size=1), 'big')
                 
-                # Validation: reject impossible payload sizes to prevent framing errors
+                # reject impossible payload sizes to prevent framing errors
                 if payload_size > 100:
                     return Sensors
                     
@@ -180,7 +180,6 @@ def ReadPort() -> dict[int, Sensor]:
                         raise ValueError("Incomplete data received.")
                     id = data[0]
                     
-                    # Validation: since IDs are strictly sequential (0 to payload_size-1), 
                     # reject any ID that falls outside this bound.
                     if id >= payload_size:
                         continue
@@ -238,7 +237,7 @@ if __name__ == "__main__":
             arduino = OpenConnection()
             continue
         
-        # msg = ""
+        msg = ""
         # Create a single row list for all sensors in this timestamp
         current_time = time.perf_counter()
         elapsedTime = logger.elapsedTimeMilliseconds(startTime, current_time)
@@ -254,10 +253,10 @@ if __name__ == "__main__":
             #     pass
             sensorData[i] = s.value
             # Add data for each sensor
-            # msg += f"{i}: {s.value:0.2f}pF "
+            msg += f"{i}: {s.value:0.2f}pF \t"
             
-        # if msg:
-        #     print(msg)
+        if msg:
+            print(msg)
             
         # Only log if we have sensor data
         if sensorData:

@@ -24,14 +24,15 @@ class LiveButterFilter:
         y, self.zi = lfilter(self.b, self.a, [value], zi=self.zi)
         return float(y[0])
 
+
 def get_color(val, loVal=4.2):
     "Given the sensor pf value, returns a more drastic color mapping (Blue -> Green -> Yellow -> Red) based on raw values"
     delta = val - loVal
     
-    if delta <= 0.2:
-        return "#0000ff"
+    # if delta <= 0.1:
+    #     return "#0000ff"
         
-    if delta <= 0.8:  # Hover region: Blue to Green
+    if delta <= 0.4:  # Hover region: Blue to Green
         ratio = (delta - 0.2) / 0.6
         r = 0
         g = int(255 * ratio)
@@ -63,13 +64,13 @@ def create_plot(parent_frame):
     """
     canvas = tk.Canvas(parent_frame, width=100, height=40, bg='white', highlightthickness=0)
     canvas.pack(side=tk.BOTTOM, padx=5, pady=10)
+    canvas.line_id = canvas.create_line(0, 0, 0, 0, fill="blue", width=2)
     return canvas
 
 def update_plot(canvas, history):
     """
     Updates the shape of the graph with dynamic auto-scaling 
     """
-    canvas.delete("all")
     if len(history) < 2:
         return
         
@@ -86,11 +87,10 @@ def update_plot(canvas, history):
     
     for i, val in enumerate(history):
         x = start_x + (i * x_step)
-
         y = height - (min(max(val, 0), max_val) / max_val * height)
         points.extend([x, y])
         
-    canvas.create_line(*points, fill="blue", width=2)
+    canvas.coords(canvas.line_id, *points)
 
 def make_draggable(frame):
     def on_drag_start(event):
@@ -130,16 +130,7 @@ def make_draggable(frame):
         widget.bind("<B1-Motion>", on_drag_motion)
         widget.bind("<ButtonRelease-1>", on_drag_release)
 
-def create_sensor_window(sensor_values, ignoreID=None):
-    """
-    Creates a window with widgets for every sensor and their respective id,
-    and changes their color from blue to red gradually based on the sensor pf value.
-    """
-    if ignoreID is None:
-        ignoreID = []
-        
-    sensor_values = {k: v for k, v in sensor_values.items() if k not in ignoreID}
-    
+def calibrate(sensor_values):
     print("Calibrating baselines for 3 seconds, please don't touch the sensors...")
     start_time = time.time()
     calib_data = {k: [] for k in sensor_values.keys()}
@@ -163,6 +154,18 @@ def create_sensor_window(sensor_values, ignoreID=None):
         s_obj.hiVal = 25.0
         
     print("Calibration complete!")
+
+def create_sensor_window(sensor_values, ignoreID=None):
+    """
+    Creates a window with widgets for every sensor and their respective id,
+    and changes their color from blue to red gradually based on the sensor pf value.
+    """
+    if ignoreID is None:
+        ignoreID = []
+        
+    sensor_values = {k: v for k, v in sensor_values.items() if k not in ignoreID}
+    
+    # calibrate(sensor_values)
     
     window = tk.Tk()
     window.title("Sensor Visualization")
@@ -233,7 +236,7 @@ def create_sensor_window(sensor_values, ignoreID=None):
         canvases[sensor_id] = canvas_plot
         histories[sensor_id] = deque([v], maxlen=50) # Keep history of last 50 points
         last_states[sensor_id] = (color, text)
-        butter_filters[sensor_id] = LiveButterFilter(cutoff=0.5, fs=32.0, order=2)
+        butter_filters[sensor_id] = LiveButterFilter(cutoff=1, fs=12.0, order=2)
         
     def update():
         try:
@@ -248,7 +251,7 @@ def create_sensor_window(sensor_values, ignoreID=None):
                 
                 v = s_obj.value
                     
-                # Apply filter
+                # # Apply filter
                 if s_id in butter_filters:
                     v = butter_filters[s_id].process(v)
                     
@@ -278,13 +281,24 @@ def create_sensor_window(sensor_values, ignoreID=None):
 def channel2ID(mux=0, port=0, channel=0):
     return (mux << 5) | (port << 2) | channel
 
+def ID2channel(id):
+    mux = id >> 5
+    port = (id >> 2) & 0b111
+    channel = id & 0b11
+    return mux, port, channel
+
 def main():
     ignoreChannel = []
     ignoreID = []
+    idNum= []
     
     for mux,port,ch in ignoreChannel:
         id = channel2ID(mux, port, ch)
         ignoreID.append(id)
+        
+    for id in idNum:
+        mux,port,ch = ID2channel(id)
+        print(f"Mux: {mux}, Port: {port}, Channel: {ch}")
         
     print("Waiting for sensors to connect...")
     sensors = dict()
@@ -294,6 +308,15 @@ def main():
             # for i,s in sensors.items(): 
             #     if not s.isCalibrated:
             #         s.Calibrate()
+            n = 1600
+            offsets = {}
+            totals = {name: 0 for name in sensors}
+            for _ in range(n):
+                for i, s in sensors.items():
+                    totals[i] += s.value
+                time.sleep(0.05)
+            for i in sensors:
+                offsets[i] = totals[i] / n
         except Exception:
             pass
             
