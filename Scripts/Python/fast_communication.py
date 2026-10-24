@@ -11,6 +11,8 @@ import serial
 import serial.tools.list_ports
 import time
 import data_logger as logger
+import json
+import os
 
 def find_arduino_port():
     """
@@ -41,76 +43,209 @@ class Sensor:
         self.channel = id & 0b11
         self.value = 0              # in pF
         self.loVal = 4.2 
+        self.touchVal 
         self.hiVal = 25
-        self.percent = 0
+        self.Force = 2
+        self.butterParam = 2 
+        self.averageParam = 2 
+        
+
+        self.percent = 0 #
         self.isCalibrated = False
 
     def __str__(self):
         return f"Sensor(id={self.id}, value={self.value}, loVal={self.loVal}, hiVal={self.hiVal}, percent={self.percent}, isCalibrated={self.isCalibrated})"
 
-    def getPercent(self, v:float)->float:
+    def getPercent(self, v:float)->float:   
         scale = self.hiVal - self.loVal
         if (v==0 or scale==0):
             return 0.0
         percent = (v - self.loVal) / scale * 100
         return round(percent, 2)
     
-    def Calibrate(self):
+    def CalibrateFast(self):
         """ 
         Takes a window average of the lo point, then window average of hi point,
         creating our scale for percentage readings.  
         """
         self.isCalibrated = False
         print(f"Calibrating {self.id}")
+        if not all(hasattr(self, attr) for attr in
+               ("manualLoVal", "manualTouchVal", "manualHiVal")):
+            print("Manual calibration required first.")
+            return
 
-        self.loVal = self.value
-        
+        touchThreshold = (self.manualLoVal + self.manualTouchVal) / 2
+        forceThreshold = (self.manualTouchVal + self.manualHiVal) / 2. #30?
         loPointSet = False
-        hpThres = 30 # universal hardpress threshold (%) 
+        # hpThres = 30 # universal hardpress threshold (%) 
+        interval = 0.25
+        windowSize = 8
 
-        interval = .5 # in seconds
-        windowSize = 4 # num of intervals
-        window = []
-        sum = 0
+        phases = ["Near Field", "Touch", "Force"]
 
-        print(f"Setting Low point. Don't touch for {(windowSize-len(window))*interval:.1f} seconds...")
-        clock = time.time()
-        while (self.isCalibrated == False):
-            # wait for interval b4 update
-            # TODO: replace ReadPort() with single sensor read 
-            ReadPort()
-            delta = time.time() - clock
-            if (delta >= interval):
-                # set Lo
-                if not loPointSet:
-                    print(f"{(windowSize-len(window))*interval:.1f} seconds...")
+        for phase in phases:
+
+            window = []
+            total = 0
+
+            # Near Field starts automatically
+            if phase == "Near Field":
+                print(
+                    f"Setting Low point. Don't touch for "
+                    f"{windowSize * interval:.1f} seconds..."
+                )
+
+            # Touch and Force require automatic detection
+            else:
+                print(f"Waiting for {phase}...")
+
+                while True:
+                    ReadPort()
+
+                    if phase == "Touch" and (
+                        touchThreshold <= self.value < forceThreshold
+                    ):
+                        break
+
+                    elif phase == "Force" and self.value >= forceThreshold:
+                        break
+
+                print(
+                    f"Setting {phase} point for "
+                    f"{windowSize * interval:.1f} seconds..."
+                )
+
+            # Begin recording the detected phase
+            clock = time.time()
+
+            while len(window) < windowSize:
+
+                ReadPort()
+                delta = time.time() - clock
+
+                if delta >= interval:
                     window.append(self.value)
-                    sum += self.value
+                    total += self.value
                     clock = time.time()
-                    if len(window) > windowSize:
-                        sum -= window.pop(0)
-                        self.loVal = sum / len(window)
-                        loPointSet = True
 
-                        self.hiVal = self.loVal + 1000 # set hiVal to be 1000 above loVal
-                        window = []
-                        sum = 0
-                        print(f"Setting Hi point. Hard press {self.id} for {(windowSize-len(window))*interval:.1f} seconds...")
-                # set Hi
-                else:                 
-                    if self.value >= self.loVal+(self.loVal*hpThres/100):
-                        print(f"{(windowSize-len(window))*interval:.1f} seconds...")
-                        window.append(self.value)
-                        sum += self.value
-                        clock = time.time()
-                        if len(window) > windowSize:
-                            self.isCalibrated = True
-                        self.hiVal = sum / len(window)
-                    else:
-                        print(f"Hard-press {self.id}...")
-                        clock = time.time()
-                        continue
+                    print(
+                        f"{(windowSize - len(window)) * interval:.1f} seconds..."
+                    )
+
+            avg = total / len(window)
+
+            if phase == "Near Field":
+                self.loVal = avg
+
+            elif phase == "Touch":
+                self.touchVal = avg
+
+            else:
+                self.hiVal = avg
+
+            print(f"{phase} average: {avg:.2f}")
+
+        # Validate all three averages
+        if not (self.loVal < self.touchVal < self.hiVal):
+            print("Calibration values are not in the expected order.")
+            return
+
+        self.isCalibrated = True
+        print("Fast calibration complete!")
+
         return
+
+    
+    def CalibrateManual(self):
+            """ 
+            First time calibration function. Calibration works in three phases: Force, Near field and Touch. 
+            The averages of these windows will define the acceptable values. The average for Touch separates Force and 
+            Near field phase. 
+            """
+            self.isCalibrated = False
+            print(f"Calibrating {self.id}")
+    
+            # self.loVal = self.value
+            phases = ["Near Field", "Touch", "Force"]
+            interval = .25 # in seconds
+            windowSize = 8 
+            discardTime = 0.25
+            duration = 3# num of intervals
+            
+            for phase in phases:
+
+                input(f"Move into {phase} position. Press ENTER when ready...")
+                window = []
+                clock = time.time()
+                while time.time() - clock < 3.0:
+
+                    ReadPort()
+                    elapsed = time.time() - clock
+
+                    if discardTime <= elapsed < duration - discardTime: 
+                        window.append(self.value)
+                           
+                print(f"{(windowSize-len(window))*interval:.1f} seconds...")
+            
+                if not window:
+                    print(f"phase No readings collected for {phase}")
+                    return
+
+                avg = sum(window) / len(window)
+                if phase == "Near Field":
+                    self.loVal = avg
+
+                elif phase == "Touch":
+                    self.touchVal = avg
+
+                else:
+                    self.hiVal = avg
+                
+                if phase == "Force":
+                    self.calibrationForce = float(input("Enter Applied force (N) or press Enter to skip \n : "))
+
+                if not (self.loVal < self.touchVal < self.hiVal):
+                    print("Calibration values are not in the expected order.") 
+                    self.isCalibrated = False
+                    return
+                self.isCalibrated = True               
+            return
+
+
+
+    def SaveCalibration(self, filename="calibration.json"):
+        """
+        Saves or updates the calibration values for this sensor
+        without deleting other sensors' calibration data.
+        """
+
+        if not self.isCalibrated:
+            print(f"Sensor {self.id} has not been calibrated.")
+            return
+
+        # Read existing calibration data
+        if os.path.exists(filename):
+            with open(filename, "r") as file:
+                data = json.load(file)
+        else:
+            data = {}
+
+    
+        data[str(self.id)] = {
+            "loVal": self.loVal,
+            "touchVal": self.touchVal,
+            "hiVal": self.hiVal,
+            "calibrationForce": getattr(self, "calibrationForce", None)
+        }
+
+   
+        with open(filename, "w") as file:
+            json.dump(data, file, indent=4)
+
+        print(f"Calibration saved for sensor {self.id}.")
+
+    
     
     def Update(self, value):
         """
