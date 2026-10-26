@@ -305,38 +305,37 @@ class Sensor:
 
         print(f"Calibration saved for sensor {self.id}.")
 
-    def RecaliberateASensor (self, filename="calibration.json"):
-        sensorID = int(input("Enter sensor ID: "))
-        with open(filename, "r") as f:
-         data = json.load(f)
-        if sensorID in data:
-         pass
-        else:
-            print(f"Sensor {sensorID} not found in JSON")
-            for s in data:
-                if s.id == sensorID:
-                    sensor = s
-                    break
-        sensor.CalibrateManual()
+    def RecaliberateASensor(self, filename="calibration.json"):
+        self.CalibrateManual()
 
-        if not sensor.isCalibrated:
+        if not self.isCalibrated:
             print("Calibration failed")
             return
-        param_choice = input("Enter 1 to update a filtering parametera: ")
-        if param_choice == 1:
-            data[str(sensorID)]["butterParam"] = int(input("Butterworth param: "))
-            data[str(sensorID)]["averageParam"] = int(input("Moving Average param: "))
+
+        param_choice = input(
+            "Enter 1 to update filtering parameters, or Enter to skip: "
+        ).strip()
+
+        if param_choice == "1":
+            self.butterParam = int(input("Butterworth param: "))
+            self.averageParam = int(input("Moving Average param: "))
 
         with open(filename, "r") as f:
             data = json.load(f)
 
-        data[str(sensorID)]["loVal"] = sensor.loVal
-        data[str(sensorID)]["touchVal"] = sensor.touchVal
-        data[str(sensorID)]["hiVal"] = sensor.hiVal
-        data[str(sensorID)]["calibrationForce"] = self.Force
-        data[str(sensorID)]["butterParam"] = sensor.butterParam
-        data[str(sensorID)]["averageParam"] = sensor.averageParam
-        
+        sensorID = str(self.id)
+
+        if sensorID not in data:
+            print(f"Sensor {sensorID} not found in JSON")
+            return
+
+        data[sensorID]["loVal"] = self.loVal
+        data[sensorID]["touchVal"] = self.touchVal
+        data[sensorID]["hiVal"] = self.hiVal
+        data[sensorID]["calibrationForce"] = self.calibrationForce
+        data[sensorID]["butterParam"] = self.butterParam
+        data[sensorID]["averageParam"] = self.averageParam
+
         with open(filename, "w") as f:
             json.dump(data, f, indent=4)
 
@@ -570,7 +569,7 @@ def calibration_menu(sensors):
         for i, s in list(sensors.items()):
             s.loadCalibration(filename)
     elif choice == "5":
-        sensorID = input("Enter sensor ID: ").strip()
+     sensorID = input("Enter sensor ID: ").strip()
 
     if sensorID in sensors:
         filename = input(
