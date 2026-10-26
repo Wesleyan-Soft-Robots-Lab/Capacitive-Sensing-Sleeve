@@ -62,7 +62,63 @@ class Sensor:
             return 0.0
         percent = (v - self.loVal) / scale * 100
         return round(percent, 2)
-    
+
+    def Calibrate(self):
+        """ 
+        Takes a window average of the lo point, then window average of hi point,
+        creating our scale for percentage readings.  
+        """
+        self.isCalibrated = False
+        print(f"Calibrating {self.id}")
+
+        self.loVal = self.value
+        
+        loPointSet = False
+        hpThres = 30 # universal hardpress threshold (%) 
+
+        interval = .5 # in seconds
+        windowSize = 4 # num of intervals
+        window = []
+        sum = 0
+
+        print(f"Setting Low point. Don't touch for {(windowSize-len(window))*interval:.1f} seconds...")
+        clock = time.time()
+        while (self.isCalibrated == False):
+            # wait for interval b4 update
+            # TODO: replace ReadPort() with single sensor read 
+            ReadPort()
+            delta = time.time() - clock
+            if (delta >= interval):
+                # set Lo
+                if not loPointSet:
+                    print(f"{(windowSize-len(window))*interval:.1f} seconds...")
+                    window.append(self.value)
+                    sum += self.value
+                    clock = time.time()
+                    if len(window) > windowSize:
+                        sum -= window.pop(0)
+                        self.loVal = sum / len(window)
+                        loPointSet = True
+
+                        self.hiVal = self.loVal + 1000 # set hiVal to be 1000 above loVal
+                        window = []
+                        sum = 0
+                        print(f"Setting Hi point. Hard press {self.id} for {(windowSize-len(window))*interval:.1f} seconds...")
+                # set Hi
+                else:                 
+                    if self.value >= self.loVal+(self.loVal*hpThres/100):
+                        print(f"{(windowSize-len(window))*interval:.1f} seconds...")
+                        window.append(self.value)
+                        sum += self.value
+                        clock = time.time()
+                        if len(window) > windowSize:
+                            self.isCalibrated = True
+                        self.hiVal = sum / len(window)
+                    else:
+                        print(f"Hard-press {self.id}...")
+                        clock = time.time()
+                        continue
+        return
     def CalibrateFast(self):
         """ 
         Takes a window average of the lo point, then window average of hi point,
@@ -228,28 +284,60 @@ class Sensor:
             return
 
         # Read existing calibration data
-        if os.path.exists(filename):
-            with open(filename, "r") as file:
+        if os.path.exists("calibration_config.json"):
+            with open("calibration_config.json", "r") as file:
                 data = json.load(file)
         else:
             data = {}
-
     
         data[str(self.id)] = {
             "loVal": self.loVal,
             "touchVal": self.touchVal,
             "hiVal": self.hiVal,
+            "butterParam": self.butterParam,
+            "averageParam" : self.averageParam,
             "calibrationForce": getattr(self, "calibrationForce", None)
         }
 
    
-        with open(filename, "w") as file:
+        with open("calibration_config.json", "w") as file:
             json.dump(data, file, indent=4)
 
         print(f"Calibration saved for sensor {self.id}.")
 
-    
-    
+    def Update1SensorCalib (self, filename="calibration.json"):
+        sensorID = int(input("Enter sensor ID: "))
+        with open(filename, "r") as f:
+         data = json.load(f)
+        if sensorID in data:
+         pass
+        else:
+            print(f"Sensor {sensorID} not found in JSON")
+            for s in data:
+                if s.id == sensorID:
+                    sensor = s
+                    break
+        sensor.CalibrateManual()
+
+        if not sensor.isCalibrated:
+            print("Calibration failed")
+            return
+
+        with open(filename, "r") as f:
+            data = json.load(f)
+
+        data[str(sensorID)]["loVal"] = sensor.loVal
+        data[str(sensorID)]["touchVal"] = sensor.touchVal
+        data[str(sensorID)]["hiVal"] = sensor.hiVal
+        data[str(sensorID)]["calibrationForce"] = self.Force
+        data[str(sensorID)]["butterParam"] = sensor.butterParam
+        data[str(sensorID)]["averageParam"] = sensor.averageParam
+        
+        with open(filename, "w") as f:
+            json.dump(data, f, indent=4)
+
+        print(f"Sensor {sensorID} calibration updated successfully")
+            
     def Update(self, value):
         """
             Updates the value reading and adjusts the percentage accordingly
@@ -525,9 +613,9 @@ if __name__ == "__main__":
         #     if not s.isCalibrated and s.id == 0:
         #         s.Calibrate()
         for i,s in Sensors.items(): 
-            # if not s.isCalibrated:
-            #     s.Calibrate()
-            #     pass
+            if not s.isCalibrated:
+                s.CalibrateManual()
+                pass
             sensorData[i] = s.value
             # Add data for each sensor
             msg += f"{i}: {s.value:0.2f}pF \t"
