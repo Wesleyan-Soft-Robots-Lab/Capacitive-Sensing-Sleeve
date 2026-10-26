@@ -254,6 +254,29 @@ class Sensor:
         self.value = value
         self.percent = self.getPercent(value)   
 
+def loadCalibration(self, filename):
+    if not os.path.exists(filename):
+        print("File not found")
+        return False
+    
+    with open(filename, "r") as file:
+        data = json.load(file)
+        
+    calibration = data.get(str(self.id))
+    
+    if calibration is None:
+        print(f"No calibration found for sensor {self.id}.")
+        return False
+
+    self.loVal = calibration["loVal"]
+    self.touchVal = calibration["touchVal"]
+    self.hiVal = calibration["hiVal"]
+    self.calibrationForce = calibration.get("calibrationForce")
+
+    self.isCalibrated = True
+
+    print(f"Calibration loaded for sensor {self.id}.")
+    return True
 """
 Methods 
 """ 
