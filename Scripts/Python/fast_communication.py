@@ -43,6 +43,7 @@ class Sensor:
         self.channel = id & 0b11
         self.value = 0              # in pF
         self.loVal = 4.2
+        self.touchVal = 0
         self.hiVal = 25
         self.Force = 2
         self.butterParam = 2 
@@ -168,7 +169,7 @@ class Sensor:
             # self.loVal = self.value
             phases = ["Near Field", "Touch", "Force"]
             interval = .25 # in seconds
-            windowSize = 8 
+            windowSize = 10 
             discardTime = 0.25
             duration = 3# num of intervals
             
@@ -184,31 +185,34 @@ class Sensor:
 
                     if discardTime <= elapsed < duration - discardTime: 
                         window.append(self.value)
+                        time.sleep(interval)
                            
                 print(f"{(windowSize-len(window))*interval:.1f} seconds...")
             
                 if not window:
                     print(f"phase No readings collected for {phase}")
                     return
-
+                print(window)
                 avg = sum(window) / len(window)
                 if phase == "Near Field":
                     self.loVal = avg
-
+                    print(self.loVal)
                 elif phase == "Touch":
                     self.touchVal = avg
-
+                    print(self.touchVal)
                 else:
                     self.hiVal = avg
-                
+                    print(self.hiVal)
                 if phase == "Force":
                     self.calibrationForce = float(input("Enter Applied force (N) or press Enter to skip \n : "))
+                    
 
-                if not (self.loVal < self.touchVal < self.hiVal):
-                    print("Calibration values are not in the expected order.") 
-                    self.isCalibrated = False
-                    return
-                self.isCalibrated = True               
+            if not (self.loVal < self.touchVal < self.hiVal):
+                print("Calibration values are not in the expected order.") 
+                self.isCalibrated = False
+                return
+            self.isCalibrated = True          
+                 
             return
 
 
@@ -253,29 +257,34 @@ class Sensor:
         self.value = value
         self.percent = self.getPercent(value)   
 
-def loadCalibration(self, filename):
-    if not os.path.exists(filename):
-        print("File not found")
-        return False
-    
-    with open(filename, "r") as file:
-        data = json.load(file)
+    def loadCalibration(self, filename):
+        if not os.path.exists(filename):
+            print("File not found")
+            return False
         
-    calibration = data.get(str(self.id))
-    
-    if calibration is None:
-        print(f"No calibration found for sensor {self.id}.")
-        return False
+        with open(filename, "r") as file:
+            data = json.load(file)
+            
+        calibration = data.get(str(self.id))
+        
+        if calibration is None:
+            print(f"No calibration found for sensor {self.id}.")
+            return False
 
-    self.loVal = calibration["loVal"]
-    self.touchVal = calibration["touchVal"]
-    self.hiVal = calibration["hiVal"]
-    self.calibrationForce = calibration.get("calibrationForce")
+        self.loVal = calibration["loVal"]
+        self.touchVal = calibration["touchVal"]
+        self.hiVal = calibration["hiVal"]
+        self.calibrationForce = calibration.get("calibrationForce")
+        
+        self.manualLoVal = self.loVal
+        self.manualTouchVal = self.touchVal
+        self.manualHiVal = self.hiVal
+        self.percent = self.getPercent(self.value)
 
-    self.isCalibrated = True
+        self.isCalibrated = True
 
-    print(f"Calibration loaded for sensor {self.id}.")
-    return True
+        print(f"Calibration loaded for sensor {self.id}.")
+        return True
 
 """
 Methods 
@@ -367,6 +376,8 @@ def ReadPort() -> dict[int, Sensor]:
     except serial.SerialException as se:
         print(se)
         return Sensors
+    
+
 
 """
 MAIN
@@ -384,7 +395,116 @@ Start()
 
 startTime = logger.startTimer()
 
+def calibration_menu(sensors):
+
+    print("\n========== CALIBRATION ==========")
+    print("1. Calibrate (Baseline)")
+    print("2. Calibrate Fast")
+    print("3. Manual Calibrate")
+    print("4. Load Calibration JSON")
+    print("=================================")
+
+    while True:
+        choice = input("Select option (1-4): ").strip()
+
+        if choice in ("1", "2", "3", "4"):
+            break
+
+        print("Invalid option. Please choose 1-4.")
+
+    if choice == "1":
+        print("\nCalibrating baseline... Don't touch sensors.")
+
+        #Sample size
+        n = 60
+        totals = {i: 0.0 for i in sensors}
+        counts = {i: 0 for i in sensors}
+
+        for _ in range(n):
+            latest = ReadPort() or {}
+
+            for i, s in latest.items():
+                if i in totals:
+                    totals[i] += s.value
+                    counts[i] += 1
+
+            time.sleep(0.05)
+
+        for i, s in sensors.items():
+            if counts[i] > 0:
+                s.loVal = totals[i] / counts[i]
+                s.percent = s.getPercent(s.value)
+
+        print("Baseline calibration complete!")
+
+    elif choice == "2":
+        filename = input(
+            "Reference calibration JSON [calibration.json]: "
+        ).strip() or "calibration.json"
+
+        for i, s in list(sensors.items()):
+            print(f"\nFast calibrating sensor {i}")
+
+            required = (
+                "manualLoVal",
+                "manualTouchVal",
+                "manualHiVal"
+            )
+
+            if not all(hasattr(s, attr) for attr in required):
+                if not s.loadCalibration(filename):
+                    print(f"Skipping sensor {i}: no manual reference.")
+                    continue
+
+            s.CalibrateFast()
+
+    elif choice == "3":
+        for i, s in list(sensors.items()):
+            print(f"\nManual calibration for sensor {i}")
+
+            s.CalibrateManual()
+
+            if s.isCalibrated:
+                s.manualLoVal = s.loVal
+                s.manualTouchVal = s.touchVal
+                s.manualHiVal = s.hiVal
+
+    elif choice == "4":
+        filename = input(
+            "Enter calibration JSON path [calibration.json]: "
+        ).strip() or "calibration.json"
+
+        for i, s in list(sensors.items()):
+            s.loadCalibration(filename)
+
+    # Offer to save new full calibration
+    if choice in ("2", "3"):
+        save = input(
+            "\nSave calibration to JSON? (y/n): "
+        ).strip().lower()
+
+        if save == "y":
+            filename = input(
+                "Save filename [calibration.json]: "
+            ).strip() or "calibration.json"
+
+            for s in list(sensors.values()):
+                if s.isCalibrated:
+                    s.SaveCalibration(filename)
+
+    print("\nCalibration setup complete!")
+
 if __name__ == "__main__":
+    print("Waiting for sensors to connect...")
+
+    while not Sensors:
+        ReadPort()
+        time.sleep(0.1)
+
+    print(f"Connected to {len(Sensors)} sensors.")
+
+    calibration_menu(Sensors)
+    
     while True:
         try:
             Sensors = ReadPort()
@@ -404,13 +524,11 @@ if __name__ == "__main__":
         # for i,s in Sensors.items():
         #     if not s.isCalibrated and s.id == 0:
         #         s.Calibrate()
-            
         for i,s in Sensors.items(): 
             # if not s.isCalibrated:
             #     s.Calibrate()
             #     pass
             sensorData[i] = s.value
-            s.LoadCalibration()
             # Add data for each sensor
             msg += f"{i}: {s.value:0.2f}pF \t"
             

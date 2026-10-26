@@ -27,38 +27,88 @@ class LiveButterFilter:
         return float(y[0])
 
 
-def get_color(val, loVal=4.2):
-    delta = val - loVal
+def get_color(val, loVal, touchVal, hiVal):
+    """
+    Color visualization using sensor-specific calibration.
 
-    if delta <= 0.3:  # Baseline / noise: Blue
+    Blue   = Baseline / no interaction
+    Green  = Hovering near sensor
+    Yellow = Touching sensor
+    Red    = Strong pressure
+    """
+
+    noise_margin = 0.3
+    hover_delta = 1.0
+
+    blue_point = loVal + noise_margin
+    green_point = loVal + hover_delta
+    yellow_point = touchVal
+    red_point = hiVal
+
+    if not (blue_point < green_point < yellow_point < red_point):
+        raise ValueError("Invalid sensor calibration thresholds")
+
+    if val <= blue_point:
         r = 0
         g = 0
         b = 255
 
-    elif delta <= 1.0:  # Hover: Blue to Green
-        ratio = (delta - 0.3) / 0.7
+    elif val <= green_point:
+        # Blue -> Green
+        ratio = (val - blue_point) / (green_point - blue_point)
+
         r = 0
         g = int(255 * ratio)
         b = int(255 * (1 - ratio))
 
-    elif delta <= 6.0:  # Light touch: Green to Yellow
-        ratio = (delta - 1.0) / 5.0
+    elif val <= yellow_point:
+        # Green -> Yellow
+        ratio = (val - green_point) / (yellow_point - green_point)
+
         r = int(255 * ratio)
         g = 255
         b = 0
 
-    elif delta <= 12.0:  # Pressing: Yellow to Red
-        ratio = (delta - 6.0) / 6.0
+    elif val <= red_point:
+        # Yellow -> Red
+        ratio = (val - yellow_point) / (red_point - yellow_point)
+
         r = 255
         g = int(255 * (1 - ratio))
         b = 0
 
-    else:  # Hard press: Red
+    else:
         r = 255
         g = 0
         b = 0
 
     return f"#{r:02x}{g:02x}{b:02x}"
+
+def sensor_color(value, sensor):
+    """
+    Use individual sensor calibration when available.
+    Otherwise use baseline-relative fixed thresholds.
+    """
+
+    if (
+        sensor.isCalibrated
+        and hasattr(sensor, "touchVal")
+        and sensor.loVal + 1.0 < sensor.touchVal < sensor.hiVal
+    ):
+        return get_color(
+            value,
+            sensor.loVal,
+            sensor.touchVal,
+            sensor.hiVal
+        )
+
+    # Fallback for baseline-only calibration
+    return get_color(
+        value,
+        sensor.loVal,
+        sensor.loVal + 6.0,
+        sensor.loVal + 12.0
+    )
 
 def create_plot(parent_frame):
     """
@@ -195,7 +245,7 @@ def create_sensor_window(sensor_values, ignoreID=None, offsets=None):
     butter_filters = {}
     for idx, (sensor_id, sensor) in enumerate(sensor_values.items()):
         v = sensor.value
-        color = get_color(v, offsets.get(sensor_id, sensor.loVal))
+        color = sensor_color(v, sensor)
         text = f"Sensor {sensor_id}\n{v:.2f} pF"
         frame = tk.Frame(scrollable_frame, bg=color, width=120, height=160, relief=tk.RAISED, borderwidth=2)
         frame.pack_propagate(False)
@@ -226,7 +276,7 @@ def create_sensor_window(sensor_values, ignoreID=None, offsets=None):
                 # # Apply filter
                 if s_id in butter_filters:
                     v = butter_filters[s_id].process(v)
-                c = get_color(v, offsets.get(s_id, s_obj.loVal))
+                c = sensor_color(v, s_obj)
                 text = f"Sensor {s_id}\n{v:.2f} pF"
                 # Update history and plot
                 if s_id in histories:
@@ -270,36 +320,41 @@ def main():
     sensors = {}
     while not sensors:
         try:
-            sensors = comm.ReadPort() or {}
+            sensors = comm.ReadPort()
         except Exception as e:
             print("Connection error:", repr(e))
             time.sleep(0.1)
+            
     print(f"Connected to {len(sensors)} sensors.")
+    
+    offsets = {}
+    comm.calibration_menu(sensors)
+    for i, sensor in sensors.items():
+            offsets[i] = sensor.loVal
+            
 
-    n = 60
-    totals = {i: 0.0 for i in sensors}
-    counts = {i: 0 for i in sensors}
+    # n = 1000
+    # totals = {i: 0.0 for i in sensors}
+    # counts = {i: 0 for i in sensors}
 
-    print("Calibrating sensors... Don't touch them.")
+    # print("Calibrating sensors... Don't touch them.")
 
-    for _ in range(n):
-        try:
-            latest = comm.ReadPort() or {}
-            for i, s in latest.items():
-                s.LoadCalibration()
-                if i in totals:
-                    totals[i] += s.value
-                    counts[i] += 1
-        except Exception as e:
-            print("Calibration read error:", repr(e))
-        time.sleep(0.05)
+    # for _ in range(n):
+    #     try:
+    #         latest = comm.ReadPort() or {}
+    #         for i, s in latest.items():
+    #             if i in totals:
+    #                 totals[i] += s.value
+    #                 counts[i] += 1
+    #     except Exception as e:
+    #         print("Calibration read error:", repr(e))
+    #     time.sleep(0.05)
 
-    offsets = {
-        i: sensor.loVal
-        for i, sensor in sensors.items()
-        if sensor.isCalibrated
-    }
-
+    # offsets = {
+    #     i: sensor.loVal
+    #     for i, sensor in sensors.items()
+    #     if sensor.isCalibrated
+    # }
 
     print("Calibration complete!")
 
