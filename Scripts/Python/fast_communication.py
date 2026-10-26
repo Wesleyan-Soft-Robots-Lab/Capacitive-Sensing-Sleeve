@@ -305,7 +305,7 @@ class Sensor:
 
         print(f"Calibration saved for sensor {self.id}.")
 
-    def Update1SensorCalib (self, filename="calibration.json"):
+    def RecaliberateASensor (self, filename="calibration.json"):
         sensorID = int(input("Enter sensor ID: "))
         with open(filename, "r") as f:
          data = json.load(f)
@@ -322,6 +322,10 @@ class Sensor:
         if not sensor.isCalibrated:
             print("Calibration failed")
             return
+        param_choice = input("Enter 1 to update a filtering parametera: ")
+        if param_choice == 1:
+            data[str(sensorID)]["butterParam"] = int(input("Butterworth param: "))
+            data[str(sensorID)]["averageParam"] = int(input("Moving Average param: "))
 
         with open(filename, "r") as f:
             data = json.load(f)
@@ -490,15 +494,16 @@ def calibration_menu(sensors):
     print("2. Calibrate Fast")
     print("3. Manual Calibrate")
     print("4. Load Calibration JSON")
+    print("5. Recalibrate Single Sensor")
     print("=================================")
 
     while True:
         choice = input("Select option (1-4): ").strip()
 
-        if choice in ("1", "2", "3", "4"):
+        if choice in ("1", "2", "3", "4", "5"):
             break
 
-        print("Invalid option. Please choose 1-4.")
+        print("Invalid option. Please choose 1-5.")
 
     if choice == "1":
         print("\nCalibrating baseline... Don't touch sensors.")
@@ -564,9 +569,20 @@ def calibration_menu(sensors):
 
         for i, s in list(sensors.items()):
             s.loadCalibration(filename)
+    elif choice == "5":
+        sensorID = input("Enter sensor ID: ").strip()
+
+    if sensorID in sensors:
+        filename = input(
+            "Enter calibration JSON path [calibration.json]: "
+        ).strip() or "calibration.json"
+
+        sensors[sensorID].RecaliberateASensor(filename)
+    else:
+        print(f"Sensor {sensorID} not found.")
 
     # Offer to save new full calibration
-    if choice in ("2", "3"):
+    if choice in ("2", "3", "5"):
         save = input(
             "\nSave calibration to JSON? (y/n): "
         ).strip().lower()
